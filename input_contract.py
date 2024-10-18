@@ -56,7 +56,7 @@ def chk_wgt_quantiles_contract(vs :np.ndarray,
       
 
 
-def chk_wgt_quantiles_tensor_contract(vs :np.ndarray, 
+def chk_wgt_quantiles_tensor_contract(VS :np.ndarray, 
                                       wts:np.ndarray, 
                                       qs :np.ndarray ) -> None:
     """
@@ -64,10 +64,10 @@ def chk_wgt_quantiles_tensor_contract(vs :np.ndarray,
 
     Parameter Contract
     -----------------
-    1. vs, and wts are numpy arrays.
-    2. vs is a numpy matrix.
+    1. VS, and wts are numpy arrays.
+    2. VS is a numpy matrix.
     3. qs in [0.0, 1.0]
-    4. |vs[0]| == |wts|
+    4. |VS[0]| == |wts|
     5. all(wts) >= 0
     6. sum(wts) > 0
 
@@ -80,7 +80,7 @@ def chk_wgt_quantiles_tensor_contract(vs :np.ndarray,
     ValueError
 
     """
-    # 1. Are vs and wts are numpy arrays?
+    # 1. Are VS and wts are numpy arrays?
     if type(wts) != np.ndarray:
         raise(ValueError('wgt_quantiles_tensor: <wts>: Not a numpy array.'  ))
     if len(wts.shape) != 1:
@@ -90,19 +90,19 @@ def chk_wgt_quantiles_tensor_contract(vs :np.ndarray,
     if len(qs.shape) != 1:
         raise(ValueError('wgt_quantiles_tensor: <qs>: Not a 1-D array.'     ))
 
-    # 2. Is vs is a numpy matrix?
-    if type(vs)  != np.ndarray:
-        raise(ValueError('wgt_quantiles_tensor: <vs>: Not a numpy array.'   ))
-    if len(vs.shape) != 2:
-        raise(ValueError('wgt_quantiles_tensor: <vs>: Not a numpy matrix.'  ))
+    # 2. Is VS is a numpy matrix?
+    if type(VS)  != np.ndarray:
+        raise(ValueError('wgt_quantiles_tensor: <VS>: Not a numpy array.'   ))
+    if len(VS.shape) != 2:
+        raise(ValueError('wgt_quantiles_tensor: <VS>: Not a numpy matrix.'  ))
 
     # 3. All qs values in [0.0, 1.0]?
     if any((qs < 0.0) | (qs > 1.0)):
         raise(ValueError('wgt_quantiles_tensor: <qs>: Not a proper quantiles array.'))
   
-    # 4. The length of vs rows and the length of wts are the same?
-    if np.size(vs[0]) != np.size(wts):
-        raise(ValueError("wgt_quantiles_tensor: The rows of <vs> don't have the same length as <wts>."))
+    # 4. The length of VS rows and the length of wts are the same?
+    if np.size(VS[0]) != np.size(wts):
+        raise(ValueError("wgt_quantiles_tensor: The rows of <VS> don't have the same length as <wts>."))
 
     # 5. Are all wts elements >= 0?
     if any(wts < 0.0):
@@ -113,7 +113,7 @@ def chk_wgt_quantiles_tensor_contract(vs :np.ndarray,
         raise(ValueError('wgt_quantiles_tensor: The sum of the elements of <wts> is not positive.'))
   
 
-def check_most_corr_input_contract(x  :np.ndarray          , 
+def check_most_corr_input_contract(X  :np.ndarray          , 
                                    eps:float               , 
                                    ws :Optional[np.ndarray] ) -> None:
     """
@@ -122,8 +122,8 @@ def check_most_corr_input_contract(x  :np.ndarray          ,
 
         Input Contract:
         ---------------
-        1. Is <x> a 2d array?
-        2. Is <x> a numeric array?
+        1. Is <X> a 2d array?
+        2. Is <X> a numeric array?
         3. a. Does it contain any -np.inf values?
            b Does it contain any np.inf values?
            c. Does it contain any np.nan values?
@@ -144,25 +144,25 @@ def check_most_corr_input_contract(x  :np.ndarray          ,
         ------
         ValueError
     """
-    # Check that x is a proper numeric 2-d numpy array.
-    if len(x.shape) != 2:
-        raise(ValueError("most_corr: Parameter, x, is not a matrix."))
+    # Check that X is a proper numeric 2-d numpy array.
+    if len(X.shape) != 2:
+        raise(ValueError("most_corr: Parameter, X, is not a matrix."))
         
-    if np.any(x == -np.inf):
-        raise(ValueError("most_corr: Parameter, x, has at least one -numpy.inf value."))
+    if np.any(X == -np.inf):
+        raise(ValueError("most_corr: Parameter, X, has at least one -numpy.inf value."))
 
-    if np.any(x == np.inf):
-        raise(ValueError("most_corr: Parameter, x, has at least one numpy.inf value."))
+    if np.any(X == np.inf):
+        raise(ValueError("most_corr: Parameter, X, has at least one numpy.inf value."))
 
-    if np.isnan(x):
-        raise(ValueError("most_corr: Parameter, x, has at least one numpy.nan value."))
+    if np.isnan(Xj):
+        raise(ValueError("most_corr: Parameter, X, has at least one numpy.nan value."))
 
     if ws:
         if len(ws.shape) != 1:
             raise(ValueError("most_corr: Parameter, ws, is not a 1-d numpy array."))
 
-        if x.shape[1] != len(ws):
-            raise(ValueError("most_corr: Parameter, x, and, ws, are not compatible."))
+        if X.shape[1] != len(ws):
+            raise(ValueError("most_corr: Parameter, X, and, ws, are not compatible."))
 
         if np.any(ws < 0):
             raise(ValueError("most_corr: Parameter, ws, has some negative elements."))
@@ -183,7 +183,7 @@ def check_most_corr_input_contract(x  :np.ndarray          ,
 def check_most_corr_vec_input_contract(labs        :np.ndarray          , 
                                        ulabs       :np.ndarray          , 
                                        lab_dict    :Dict[Any, int]      , 
-                                       x           :np.ndarray          , 
+                                       X           :np.ndarray          , 
                                        eps         :float               , 
                                        ws          :Optional[np.ndarray],
                                        exclude_labs:Optional[np.ndarray] ) -> None:
@@ -194,8 +194,8 @@ def check_most_corr_vec_input_contract(labs        :np.ndarray          ,
         Input Contract:
         ---------------
         1. Are labs and <ulabs> 1-d arrays?
-        2. Is <x> a 2d array?
-        3. Are the values of x valid? 
+        2. Is <X> a 2d array?
+        3. Are the values of X valid? 
             a. Does it contain any -np.inf values?
             b. Does it contain any np.inf values?
             c. Does it contain any np.nan values?
@@ -206,7 +206,7 @@ def check_most_corr_vec_input_contract(labs        :np.ndarray          ,
             d. Does it contain any -np.inf values?
             e. Does it contain any np.inf values?
             f. Does it contain any np.nan values?
-        5. Do the number of labels in our universe match the number of N-vectors: |<ulabs>| = <x>.shape[0] ?
+        5. Do the number of labels in our universe match the number of N-vectors: |<ulabs>| = <X>.shape[0] ?
         6. Are the elements of <ulabs> unique?
         7. Is <labs> a subset of <ulabs>?
         8. If non-null, is <exclude_labs> a subset of <ulabs>?
@@ -231,26 +231,26 @@ def check_most_corr_vec_input_contract(labs        :np.ndarray          ,
         raise(ValueError("most_corr_vec: The parameter, ulabs, is not a 1-d numpy array."))
 
     # 2.
-    if len(x.shape) != 2:
-        raise(ValueError("most_corr_vec: The parameter, x, is not a 2-d numpy array."))
+    if len(X.shape) != 2:
+        raise(ValueError("most_corr_vec: The parameter, X, is not a 2-d numpy array."))
 
     # 3.
-    if np.any(x == -np.inf):
-        raise(ValueError("most_corr: Parameter, x, has at least one -numpy.inf value."))
+    if np.any(X == -np.inf):
+        raise(ValueError("most_corr: Parameter, X, has at least one -numpy.inf value."))
 
-    if np.any(x == np.inf):
-        raise(ValueError("most_corr: Parameter, x, has at least one numpy.inf value."))
+    if np.any(X == np.inf):
+        raise(ValueError("most_corr: Parameter, X, has at least one numpy.inf value."))
 
-    if np.isnan(x):
-        raise(ValueError("most_corr: Parameter, x, has at least one numpy.nan value."))
+    if np.isnan(X):
+        raise(ValueError("most_corr: Parameter, X, has at least one numpy.nan value."))
 
     # Need shape info for checking.
-    M, N = x.shape
+    M, N = X.shape
     
     # 4. Check <ws>.
     if ws:
         if N != len(ws):
-            raise(ValueError("most_corr_vec: Parameter, x, and, ws, are not compatible."))
+            raise(ValueError("most_corr_vec: Parameter, X, and, ws, are not compatible."))
             
         if np.any(ws < 0):
             raise(ValueError("most_corr_vec: Parameter, ws, has some negative elements."))
@@ -269,7 +269,7 @@ def check_most_corr_vec_input_contract(labs        :np.ndarray          ,
 
     # 5. Are <ulabs> the same length as the number of N-vectors?
     if len(ulabs) != M:
-        raise(ValueError(f"most_corr_vec: The length of ulabs({len(ulabs)}) does not match the first dimension of x({M})."))
+        raise(ValueError(f"most_corr_vec: The length of ulabs({len(ulabs)}) does not match the first dimension of X({M})."))
 
     # 6. Are <ulabs> are unique?
     if len(np.unique(ulabs)) != len(ulabs):
@@ -279,7 +279,7 @@ def check_most_corr_vec_input_contract(labs        :np.ndarray          ,
     if not np.all(np.isin(labs, ulabs)):
         raise(ValueError("most_corr_vec: Not all labels in, labs, are in the universe of labels, ulabs."))
 
-    # 8. If non-null, ss <exclude_labs> a subset of the keys of <ulabs>?
+    # 8. If non-null, <exclude_labs> a subset of the keys of <ulabs>?
     if exclude_labs:
         if not np.all(np.isin(exclude_labs, ulabs)):
             raise(ValueError("most_corr_vec: Not all labs in, exlclude_labs, are in the universe of labels, ulabs."))
@@ -294,7 +294,7 @@ def check_most_corr_vecs_input_contract(labs        :np.ndarray          ,
                                         ulabs       :np.ndarray          , 
                                         lab_dict    :Dict[Any, int]      , 
                                         k           :int                 ,
-                                        x           :np.ndarray          , 
+                                        X           :np.ndarray          , 
                                         eps         :float               , 
                                         ws          :Optional[np.ndarray],
                                         exclude_labs:Optional[np.ndarray] ) -> None:
@@ -305,8 +305,8 @@ def check_most_corr_vecs_input_contract(labs        :np.ndarray          ,
         Input Contract:
         ---------------
         1. Are labs and <ulabs> 1-d arrays?
-        2. Is <x> a 2d array?
-        3. Are the values of x valid?
+        2. Is <X> a 2d array?
+        3. Are the values of X valid?
             a. Does it contain any -np.inf values?
             b. Does it contain any np.inf values?
             c. Does it contain any np.nan values?
@@ -317,7 +317,7 @@ def check_most_corr_vecs_input_contract(labs        :np.ndarray          ,
             d. Does it contain any -np.inf values?
             e. Does it contain any np.inf values?
             f. Does it contain any np.nan values?
-        5. Do the number of labels in our universe match the number of N-vectors: |<ulabs>| = <x>.shape[0] ?
+        5. Do the number of labels in our universe match the number of N-vectors: |<ulabs>| = <X>.shape[0] ?
         6. Are the elements of <ulabs> unique?
         7. Is <labs> a subset of <ulabs>?
         8. If non-null, is <exclude_labs> a subset of <ulabs>?
@@ -343,26 +343,26 @@ def check_most_corr_vecs_input_contract(labs        :np.ndarray          ,
         raise(ValueError("most_corr_vecs: The parameter, ulabs, is not a 1-d numpy array."))
 
     # 2.
-    if len(x.shape) != 2:
-        raise(ValueError("most_corr_vecs: The parameter, x, is not a 2-d numpy array."))
+    if len(X.shape) != 2:
+        raise(ValueError("most_corr_vecs: The parameter, X, is not a 2-d numpy array."))
 
-    # 3. Is the values of x valid?
-    if np.any(x == -np.inf):
-        raise(ValueError("most_corr: Parameter, x, has at least one -numpy.inf value."))
+    # 3. Is the values of X valid?
+    if np.any(X == -np.inf):
+        raise(ValueError("most_corr: Parameter, X, has at least one -numpy.inf value."))
 
-    if np.any(x == np.inf):
-        raise(ValueError("most_corr: Parameter, x, has at least one numpy.inf value."))
+    if np.any(X == np.inf):
+        raise(ValueError("most_corr: Parameter, X, has at least one numpy.inf value."))
 
-    if np.isnan(x):
-        raise(ValueError("most_corr: Parameter, x, has at least one numpy.nan value."))
+    if np.isnan(X):
+        raise(ValueError("most_corr: Parameter, X, has at least one numpy.nan value."))
 
     # Need shape info for checking.
-    M, N = x.shape
+    M, N = X.shape
 
     # 4. Check <ws>.
     if ws:
         if N != len(ws):
-            raise(ValueError("most_corr_vecs: Parameter, x, and, ws, are not compatible."))
+            raise(ValueError("most_corr_vecs: Parameter, X, and, ws, are not compatible."))
             
         if np.any(ws < 0):
             raise(ValueError("most_corr_vecs: Parameter, ws, has some negative elements."))
