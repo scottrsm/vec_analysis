@@ -83,11 +83,11 @@ def wgt_quantiles(vs :np.ndarray,
     return(ovs[idx])
 
 
-def wgt_quantiles_tensor(vs :np.ndarray, 
+def wgt_quantiles_tensor(VS :np.ndarray, 
                          wts:np.ndarray, 
                          qs :np.ndarray ) -> np.ndarray:
     '''
-    Compute a (D, M) numpy array consisting of the quantile weighted values of <vs> using weights, <wts>, for each quantile in <qs>.
+    Compute a (D, M) numpy array consisting of the quantile weighted values of <VS> using weights, <wts>, for each quantile in <qs>.
     
     Parameters
     ----------
@@ -109,8 +109,8 @@ def wgt_quantiles_tensor(vs :np.ndarray,
   
     Parameter Contract
     -----------------
-    1. vs, and wts are numpy arrays.
-    2. vs is a numpy matrix.
+    1. VS, and wts are numpy arrays.
+    2. VS is a numpy matrix.
     3. qs in [0.0, 1.0]
     4. |vs[0]| == |wts|
     5. all(wts) >= 0
@@ -118,12 +118,12 @@ def wgt_quantiles_tensor(vs :np.ndarray,
     
     Assumptions
     -----------
-    1. <vs>, <wts>, and <qs> are all numeric arrays.
+    1. <VS>, <wts>, and <qs> are all numeric arrays.
 
     '''
   
     # Check input parameter contract.
-    ic.chk_wgt_quantiles_tensor_contract(vs, wts, qs)
+    ic.chk_wgt_quantiles_tensor_contract(VS, wts, qs)
 
     # Normalize the weights.
     ws  = wts / np.sum(wts)
@@ -131,11 +131,11 @@ def wgt_quantiles_tensor(vs :np.ndarray,
     D, N  = vs.shape
     M     = qs.size
 
-    # Get the sorted index array for each of the value vectors in vs.
-    idx = np.argsort(vs, axis=1)
+    # Get the sorted index array for each of the value vectors in VS.
+    idx = np.argsort(VS, axis=1)
   
-    # Apply this index back to vs to get sorted values.
-    ovs = np.take_along_axis(vs, idx, axis=1)
+    # Apply this index back to VS to get sorted values.
+    OVS = np.take_along_axis(VS, idx, axis=1)
   
     # Apply the index to the weights, where, the dimension of ws (and cws) expands to: (D, N).
     ows = ws[idx]
@@ -159,7 +159,7 @@ def wgt_quantiles_tensor(vs :np.ndarray,
   
     # Return the values in the value vectors that correspond to these indices -- the M quantiles for each of the D value vectors.
     # A (D, M) matrix.
-    return(np.take_along_axis(ovs, idx, axis=1))
+    return(np.take_along_axis(OVS, idx, axis=1))
 
 
 
