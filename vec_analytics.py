@@ -1,4 +1,4 @@
-import numpy as np
+]s]smport numpy as np
 import pandas as pd
 from typing import Any, Dict, Optional
 from enum import Enum
@@ -244,7 +244,7 @@ def corr(X           : np.ndarray                 ,
 
     if chk_contract:
         if type(X) != np.ndarray:
-            raise ValueError("most_corr_vecs: The parameter, X, is not a numpy array.")
+            raise ValueError("corr: The parameter, X, is not a numpy array.")
 
         if len(X.shape) != 2:
             raise ValueError("corr: Parameter, X, is not a matrix.")
@@ -260,7 +260,7 @@ def corr(X           : np.ndarray                 ,
     if chk_contract:
         if ws:
             if type(ws) != np.ndarray:
-                raise ValueError("most_corr_vecs: The parameter, ws, is not a numpy array.")
+                raise ValueError("corr: The parameter, ws, is not a numpy array.")
 
             if len(ws.shape) != 1:
                 raise ValueError("corr: Parameter, ws, is not a 1-d numpy array.")
