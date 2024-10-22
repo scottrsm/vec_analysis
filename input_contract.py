@@ -190,7 +190,7 @@ def check_most_corr_vec_input_contract(X           :np.ndarray          ,
     M, N = X.shape
     
     # 4. Check <ws>.
-    if ws:
+    if type(ws) != type(None):
         if type(ws) != np.ndarray:
             raise ValueError("most_corr_vec: The parameter, ws, is not a numpy array.")
 
@@ -209,7 +209,7 @@ def check_most_corr_vec_input_contract(X           :np.ndarray          ,
         if np.any(ws == np.inf):
             raise ValueError("most_corr_vec: Parameter, ws, has at least one numpy.inf value.")
 
-        if np.isnan(ws):
+        if np.any(np.isnan(ws)):
             raise ValueError("most_corr_vec: Parameter, ws, has at least one numpy.nan value.")
 
     # 5. Are <ulabs> the same length as the number of N-vectors?
@@ -225,9 +225,11 @@ def check_most_corr_vec_input_contract(X           :np.ndarray          ,
         raise ValueError("most_corr_vec: Not all labels in, labs, are in the universe of labels, ulabs.")
 
     # 8. If non-null, is <exclude_labs> a subset of the keys of <ulabs>?
-    if exclude_labs:
+    if type(exclude_labs) != type(None):
+        if type(exclude_labs) != np.ndarray:
+            raise ValueError("most_corr_vec: The parameter, exclude_labs, is not a numpy array.")
         if not np.all(np.isin(exclude_labs, ulabs)):
-            raise ValueError("most_corr_vec: Not all labs in, exlclude_labs, are in the universe of labels, ulabs.")
+            raise ValueError("most_corr_vec: Not all labels in, exclude_labs, are in the universe of labels, ulabs.")
 
     # 9. Is <ulabs> a subset of the keys of <lab_dict>?
     if not np.all(np.isin(ulabs, np.array(list(lab_dict.keys())))):
@@ -314,7 +316,7 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
     M, N = X.shape
 
     # 4. Check <ws>.
-    if ws:
+    if type(ws) != type(None):
         if type(ws) != np.ndarray:
             raise ValueError("most_corr_vecs: The parameter, ws, is not a numpy array.")
 
@@ -336,7 +338,7 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
         if np.any(ws == np.inf):
             raise ValueError("most_corr_vecs: Parameter, ws, has at least one numpy.inf value.")
 
-        if np.isnan(ws):
+        if np.any(np.isnan(ws)):
             raise ValueError("most_corr_vecs: Parameter, ws, has at least one numpy.nan value.")
 
     # 5. Are <ulabs> the same length as the number of M-vectors?
@@ -352,7 +354,7 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
         raise ValueError("most_corr_vecs: Not all labels in, labs, are in the universe of labels, ulabs.")
 
     # 8. Is <exclude_labs> a subset of <ulabs>?
-    if exclude_labs:
+    if type(exclude_labs) != type(None):
         if type(exclude_labs) != np.ndarray:
             raise ValueError("most_corr_vecs: The parameter, exclude_labs, is not a numpy array.")
 
@@ -368,7 +370,7 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
         raise ValueError(f"most_corr_vecs: The parameter, k({k}), is not positive.")
 
     # 10. Are there at least <k> labels in <ulabs> less <exclude_labs>?
-    if exclude_labs:
+    if type(exclude_labs) is np.ndarray:
         if ( len(ulabs) - len(exclude_labs) ) < k:
             raise ValueError(f"most_corr_vecs: The expression, (ulabs - exclude_labs), has less than k({k}) elements.")
     else:  
