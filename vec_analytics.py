@@ -216,16 +216,16 @@ def wgt_quantiles_tensor(VS :np.ndarray,
 
 
 
-def corr(Z           : np.ndarray                 , 
+def corr(X           : np.ndarray                 , 
          eps         : float = 1.0e-6             ,
          ws          : Optional[np.ndarray] = None, 
          chk_contract:bool = True                  ) -> np.ndarray:
     """!
-        Find the correlation between M vectors of length N, represented as the MxN matrix, Z.
+        Find the correlation between M vectors of length N, represented as the MxN matrix, <X>.
 
         Parameters
         ----------
-        Z           : A MxN numeric matrix representing M vectors of length N.
+        X           : A MxN numeric matrix representing M vectors of length N.
         eps         : A float value. The sum of the weights should be larger than this value.
         ws          : (Optional) A N numeric vector of weights of non-negative values.
         chk_contract: A boolean, defaults to True meaning, check the input parameter contract.
@@ -244,19 +244,18 @@ def corr(Z           : np.ndarray                 ,
     """
 
     if chk_contract:
-        if type(Z) != np.ndarray:
-            raise ValueError("corr: The parameter, Z, is not a numpy array.")
+        if type(X) != np.ndarray:
+            raise ValueError("corr: The parameter, X, is not a numpy array.")
 
-        if len(Z.shape) != 2:
-            raise ValueError("corr: Parameter, Z, is not a matrix.")
+        if len(X.shape) != 2:
+            raise ValueError("corr: Parameter, X, is not a matrix.")
 
         if type(eps) == type(0.0) and eps <= 0.0:
             raise ValueError("corr: Parameter, eps, is not a positive number.")
 
 
-    # Copy <Z> as we need to reshape it.
-    M, N = Z.shape
-    X = Z.copy()
+    # Get shape of <X>.
+    M, N = X.shape
 
     # Check that ws and X are compatible.
     if chk_contract:
@@ -307,11 +306,15 @@ def corr(Z           : np.ndarray                 ,
     # Set NaNs to 0.
     corr[np.isnan(corr)] = 0.0
 
+    # Return X to is original shape.
+    X.shape = (M, N)
+
+    # Return the (weighted) correlation matrix.
     return corr
 
 
 
-def most_corr_vec(Z           : np.ndarray                 ,
+def most_corr_vec(X           : np.ndarray                 ,
                   labs        : np.ndarray                 , 
                   ulabs       : np.ndarray                 , 
                   lab_dict    : Dict[Any, int]             , 
@@ -323,16 +326,16 @@ def most_corr_vec(Z           : np.ndarray                 ,
     """!
         For each vector in a list, <labs>, determine the "most" (weighted) correlated 
         vector from a larger universe of <M> names, <ulabs>, using the matrix of 
-        series data, Z, an 'MxN' matrix. Correlation may be weighted; one may 
+        series data, <X>, an MxN matrix. Correlation may be weighted; one may 
         also exclude some vectors from the larger universe.
         NOTE: Weights, <ws>, will be normalized by this function.
 
         Parameters
         ---------
-        Z           : A MxN matrix of M vectors, each of length N.
+        X           : A MxN matrix of M vectors, each of length N.
         labs        : An H vector of the names of the vectors of interest.
         ulabs       : The names of the larger universe of vectors.
-        lab_dict    : A dictionary mapping vector labels into the row index of <Z>.
+        lab_dict    : A dictionary mapping vector labels into the row index of <X>.
                       At a minimum, the keys must include <labs>.
         corr_type   : An element from class CorrType, default is CorrType.MOST.
         eps         : A positive float used as a minimum cumulative weight threshold.
@@ -357,10 +360,9 @@ def most_corr_vec(Z           : np.ndarray                 ,
 
     # Check input contract?
     if chk_contract:
-        ic.check_most_corr_vec_input_contract(Z, labs, ulabs, lab_dict, eps, ws, exclude_labs)
+        ic.check_most_corr_vec_input_contract(X, labs, ulabs, lab_dict, eps, ws, exclude_labs)
 
-    # We copy Z so that we can reshape it.
-    X    = Z.copy()
+    # We copy X so that we can reshape it.
     M, N = X.shape
     H    = len(labs)
 
@@ -391,8 +393,8 @@ def most_corr_vec(Z           : np.ndarray                 ,
 
     # Get the correlation of our chosen vectors against the full universe 
     # -- giving an HxM matrix (H the length of labs).
-    X         = X[idx,:]    # Get only the H <labs> vectors.
-    X.shape   = (H, 1, N)   # expand for broadcasting, use only the <lab> vectors.
+    X1        = X[idx,:]    # Get only the H <labs> vectors.
+    X1.shape   = (H, 1, N)   # expand for broadcasting, use only the <lab> vectors.
     Y.shape   = (1, M, N)   # Expand for broadcasting and use the full set of vectors.
     wss.shape = (1, 1, N)   # Expand for broadcasting.
  
@@ -401,7 +403,7 @@ def most_corr_vec(Z           : np.ndarray                 ,
 
     # Compute correlation matrix of the <labs> vectors against the universe -- <ulabs> vectors.
     # Set self correlation to -infinity for only the <labs> rows of the correlation matrix.
-    corr = np.sum(X * Y * wss, axis=2) / np.sqrt(np.sum(X * X * wss, axis=2) * np.sum(Y * Y * wss, axis=2))   # Aggregation of third index.
+    corr = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))   # Aggregation of third index.
 
     # Set NaNs to 0.
     corr[np.isnan(corr)] = 0.0
@@ -417,14 +419,13 @@ def most_corr_vec(Z           : np.ndarray                 ,
 
     # Get the top correlate position and value.
     bidx = get_best_corr_idx(corr, ind, corr_type)
-
     val = corr[ind, bidx]
 
     # Return a Dataframe of vector labels; the most correlated vector(its label); and their correlation.
     return pd.DataFrame({'lab' : labs, 'best_correlate': ulabs[bidx], 'best_corr' : val})
 
 
-def most_corr_vecs(Z           : np.ndarray                 ,
+def most_corr_vecs(X           : np.ndarray                 ,
                    labs        : np.ndarray                 , 
                    ulabs       : np.ndarray                 , 
                    lab_dict    : Dict[Any, int]             , 
@@ -439,10 +440,10 @@ def most_corr_vecs(Z           : np.ndarray                 ,
 
         Parameters
         ---------
-        Z           : A MxN np.ndarray matrix of M vectors, each of length N.
+        X           : A MxN np.ndarray matrix of M vectors, each of length N.
         labs        : An H np.ndarray vector of the labels named of the vectors of interest.
         ulabs       : The larger universe of vectors.
-        lab_dict    : A dictionary mapping vector labels into the row index of <Z>.
+        lab_dict    : A dictionary mapping vector labels into the row index of <X>.
                       At a minimum, the keys must include all values in <labs>.
         k           : Positive integer, the number of top correlates to retrieve.
         corr_type   : An element from class CorrType, default is CorrType.MOST.
@@ -470,11 +471,9 @@ def most_corr_vecs(Z           : np.ndarray                 ,
 
     # Check input contract?
     if chk_contract:
-        ic.check_most_corr_vecs_input_contract(Z, labs, ulabs, lab_dict, k, eps, ws, exclude_labs)
+        ic.check_most_corr_vecs_input_contract(X, labs, ulabs, lab_dict, k, eps, ws, exclude_labs)
         
-    # Copy <Z> to <X> as we are going to reshape <X>.
     # Extract shape of <X> and of <labs>.
-    X = Z.copy()
     M, N = X.shape
     H    = len(labs)
 
@@ -504,8 +503,8 @@ def most_corr_vecs(Z           : np.ndarray                 ,
 
     # Get the correlation of our chosen vectors against the full universe 
     # -- giving an HxM matrix (H the length of labs)
-    X         = X[idx,:]    # Get only the <labs> vectors.
-    X.shape   = (H, 1, N)   # Expand for broadcasting.
+    X1        = X[idx,:]    # Get only the <labs> vectors.
+    X1.shape  = (H, 1, N)   # Expand for broadcasting.
     Y.shape   = (1, M, N)   # Expand for broadcasting and use the full set of vectors.
     wss.shape = (1, 1, N)   # Expand ws for broadcasting.
 
@@ -514,10 +513,9 @@ def most_corr_vecs(Z           : np.ndarray                 ,
     
     # Compute correlation matrix H(length of labs) x M(all vectors in the universe). 
     ind = np.arange(len(labs))
-    corr           = np.sum(X * Y * wss, axis=2) / np.sqrt(np.sum(X * X * wss, axis=2) * np.sum(Y * Y * wss, axis=2))  
+    corr           = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))  
     corr[ind, idx] = worst_corr_val  # Array slicing -- fill "diagonal" with worst corr val.
                                      # -- effectively eliminating themselves as their "best" correlate.
-
     # Set NaNs to 0.
     corr[np.isnan(corr)] = 0.0
 
