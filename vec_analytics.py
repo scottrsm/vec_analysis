@@ -6,12 +6,19 @@ import input_contract as ic
 
 
 class CorrType(Enum):
+    """
+    Enumeration type determining what "best" correlation means.
+    """
     LEAST = 1
     MOST  = 2
     LOW   = 3
     HIGH  = 4
 
+
 def get_worst_corr(corr_type):
+    """
+    Return the "worst" value for a given correlation enumeration type.
+    """
     val = None
     if corr_type == CorrType.MOST:
         val = -np.inf
@@ -26,7 +33,12 @@ def get_worst_corr(corr_type):
 
     return val
 
+
 def get_best_corr_idx(corr, ind, corr_type):
+    """
+    Get the "top" correlation position (column index) for 
+    a given row index of a correlation matrix.
+    """
     # Get the top correlate position.
     idx = None
     if corr_type == CorrType.MOST:
@@ -42,7 +54,12 @@ def get_best_corr_idx(corr, ind, corr_type):
 
     return idx
 
+
 def get_best_corr_idxs(corr, ind, corr_type, k):
+    """
+    Get the "top" correlation positions (column indices) for 
+    a given row index of a correlation matrix.
+    """
     # Get the top correlates positions.
     idxs = None
     if corr_type == CorrType.MOST:
@@ -58,21 +75,22 @@ def get_best_corr_idxs(corr, ind, corr_type, k):
 
     return idxs
 
+
 def wgt_quantiles(vs :np.ndarray, 
-                  wts:np.ndarray, 
+                  ws:np.ndarray, 
                   qs :np.ndarray ) -> np.ndarray:
-    '''
+    """
     Get a numpy array consisting of an array of quantile weighted <vs> values.
     
     Parameters
     ----------
     vs    A numpy(np) (N) array of numeric values. 
-    wts   A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
+    ws    A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
     qs    A numpy(np) (D) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1]).
 
     Returns
     -------
-    :A numpy array consisting of the quantile weighted values of <vs> using weights, <wts>, for each quantile in <qs>.
+    A numpy array consisting of the quantile weighted values of <vs> using weights, <ws>, for each quantile in <qs>.
   
     Return-Type
     -----------
@@ -84,11 +102,11 @@ def wgt_quantiles(vs :np.ndarray,
 
     Parameter Contract
     -----------------
-    1. vs, wts, qs are all numpy arrays.
+    1. vs, ws, qs are all numpy arrays.
     2. qs in [0.0, 1.0]
-    3. |vs| == |wts|
-    4. all(wts) >= 0
-    5. sum(wts) > 0
+    3. |vs| == |ws|
+    4. all(ws) >= 0
+    5. sum(ws) > 0
     
     Return
     ------
@@ -100,17 +118,17 @@ def wgt_quantiles(vs :np.ndarray,
 
     Assumptions
     -----------
-    1. <vs>, <wts>, and <qs> are all numeric arrays.
-    '''
+    1. <vs>, <ws>, and <qs> are all numeric arrays.
+    """
 
     # Check input parameter contract.
-    ic.chk_wgt_quantiles_contract(vs, wts, qs)
+    ic.chk_wgt_quantiles_contract(vs, ws, qs)
 
-    # Sort the vs array and the associated weights.
+    # Sort the <vs> array and the associated weights.
     # Turn the weights into proper weights and create a cumulative weight array.
     idx  = np.argsort(vs)
     ovs  = vs[idx]
-    ows  = wts[idx]
+    ows  = ws[idx]
     ows  = ows / np.sum(ows) # Normalize the weights.
     cws  = np.cumsum(ows)
   
@@ -119,6 +137,8 @@ def wgt_quantiles(vs :np.ndarray,
   
     # Reshape to broadcast.
     cws.shape = (N, 1)
+
+    # Need to copy to broadcast quantiles (don't change inputs).
     qss = qs.copy()
     qss.shape  = (1, M)
   
@@ -132,20 +152,20 @@ def wgt_quantiles(vs :np.ndarray,
     # Get the indices of the boundary.
     idx = np.maximum(0, np.where(X == -1)[0] - 1)
   
-    # Return the weighted quantile value of <vs> against each <qs>.
+    # Return the weighted quantile value of <vs> against each quantile, <qs>.
     return ovs[idx]
 
 
 def wgt_quantiles_tensor(VS :np.ndarray, 
-                         wts:np.ndarray, 
+                         ws:np.ndarray, 
                          qs :np.ndarray ) -> np.ndarray:
-    '''
-    Compute a (D, M) numpy array consisting of the quantile weighted values of <VS> using weights, <wts>, for each quantile in <qs>.
+    """ 
+    Compute a (D, M) numpy array consisting of the quantile weighted values of <VS> using weights, <ws>, for each quantile in <qs>.
     
     Parameters
     ----------
     VS    A numpy(np) (D, N) matrix of numeric values. 
-    wgts  A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
+    ws    A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
     qs    A numpy(np) (M) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1]).
   
     Returns
@@ -162,39 +182,38 @@ def wgt_quantiles_tensor(VS :np.ndarray,
   
     Parameter Contract
     -----------------
-    1. VS, and wts are numpy arrays.
+    1. VS, ws, and qs are numpy arrays.
     2. VS is a numpy matrix.
     3. qs in [0.0, 1.0]
-    4. |VS[0]| == |wts|
-    5. all(wts) >= 0
-    6. sum(wts) > 0
+    4. |VS[0]| == |ws|
+    5. all(ws) >= 0
+    6. sum(ws) > 0
     
     Assumptions
     -----------
-    1. <VS>, <wts>, and <qs> are all numeric arrays.
+    1. <VS>, <ws>, and <qs> are all numeric arrays.
 
-    '''
+    """
   
     # Check input parameter contract.
-    ic.chk_wgt_quantiles_tensor_contract(VS, wts, qs)
+    ic.chk_wgt_quantiles_tensor_contract(VS, ws, qs)
 
-    # Normalize the weights.
-    ws  = wts / np.sum(wts)
-  
     D, N  = VS.shape
     M     = qs.size
 
-    # Get the sorted index array for each of the value vectors in VS.
+    # Get the sorted index array for each of the value vectors in <VS>.
     idx = np.argsort(VS, axis=1)
   
-    # Apply this index back to VS to get sorted values.
+    # Apply this index back to <VS> to get sorted values.
     OVS = np.take_along_axis(VS, idx, axis=1)
   
-    # Apply the index to the weights, where, the dimension of ws (and cws) expands to: (D, N).
+    # Apply the index to the weights, where, the dimension of <ows> and <cws> expands to: (D, N).
     ows = ws[idx]
-    cws = np.cumsum(ows, axis=1)
+    wss = np.sum(ows, axis=1) # sorted weight row sums.
+    ows /= wss[:, np.newaxis] # Normalize the sorted weights.
+    cws = np.cumsum(ows, axis=1) # Get the cumulated ordered weight sum.
 
-    # Reshape to broadcast.
+    # Reshape to broadcast. Copy <qs> so as not to modify an input.
     cws.shape = (D, N, 1)
     qss = qs.copy()
     qss.shape  = (1, 1, M)
@@ -210,7 +229,8 @@ def wgt_quantiles_tensor(VS :np.ndarray,
     idx = np.maximum(0, np.where(Delta == -1)[1] - 1)
     idx = idx.reshape(D, M) 
   
-    # Return the values in the value vectors that correspond to these indices -- the M quantiles for each of the D value vectors.
+    # Return the values in the value vectors that correspond to these indices,
+    # the M quantiles for each of the D value vectors.
     # A (D, M) matrix.
     return np.take_along_axis(OVS, idx, axis=1)
 
@@ -243,6 +263,7 @@ def corr(X           : np.ndarray                 ,
         ValueError
     """
 
+    # Optionally check input contract for <X>.
     if chk_contract:
         if type(X) != np.ndarray:
             raise ValueError("corr: The parameter, X, is not a numpy array.")
@@ -257,7 +278,7 @@ def corr(X           : np.ndarray                 ,
     # Get shape of <X>.
     M, N = X.shape
 
-    # Check that ws and X are compatible.
+    # Optionally check input contract for <ws>.
     if chk_contract:
         if type(ws) != type(None):
             if type(ws) != np.ndarray:
@@ -286,13 +307,13 @@ def corr(X           : np.ndarray                 ,
     wss /= np.sum(wss)
 
     # Subtract off the mean of each row.
-    # Note: Need <ws> to be normalized in order to use np.sum.
+    # Note: Need <wss> to be normalized in order to use np.sum to compute the mean.
     # We need to "reshape" the mean, <mn>, to do this -- so that "broadcasting" works.
     mn       = np.sum(X * wss, axis=1)
     mn.shape = (M, 1)
     X        = X - mn
 
-    # Copy X and now do a reshape of each so that the "rules of broadcasting" will give us
+    # Copy <X> and now do a reshape of each so that the "rules of broadcasting" will give us
     # all combinations of <X> * <Y>.
     Y = X.copy()
     X.shape   = (1, M, N)
@@ -300,13 +321,13 @@ def corr(X           : np.ndarray                 ,
     wss.shape = (1, 1, N)
 
     # Now use aggregation to sum up the third index -- the values -- to get 
-    # an MxM matrix of cross-correlations.
+    # an MxM correlation matrix.
     corr = np.sum(X * Y * wss, axis=2) / np.sqrt( np.sum(X * X * wss, axis=2) * np.sum(Y * Y * wss, axis=2) )
 
     # Set NaNs to 0.
     corr[np.isnan(corr)] = 0.0
 
-    # Return X to is original shape.
+    # Return <X> to its original shape.
     X.shape = (M, N)
 
     # Return the (weighted) correlation matrix.
@@ -358,15 +379,15 @@ def most_corr_vec(X           : np.ndarray                 ,
         ValueError
      """
 
-    # Check input contract?
+    # Optionally check input contract.
     if chk_contract:
         ic.check_most_corr_vec_input_contract(X, labs, ulabs, lab_dict, eps, ws, exclude_labs)
 
-    # We copy X so that we can reshape it.
+    # We reshape <X> for later computations.
     M, N = X.shape
     H    = len(labs)
 
-    # If not given set <ws> to its default setting -- uniform weights.
+    # If not given, set <ws> to its default setting -- uniform weights.
     if type(ws) == type(None):
         ws = np.ones(N)
 
@@ -381,7 +402,6 @@ def most_corr_vec(X           : np.ndarray                 ,
     mn       = np.sum(X * wss, axis=1) # Vector means.
     mn.shape = (M, 1)                  # Expand for broadcasting.
     X        = X - mn                  # Subtract off row means.
-    Y        = X.copy()                # Make a copy of X.
 
     # Get the index of each security of interest.
     idx = np.array([lab_dict[lab] for lab in labs])
@@ -393,27 +413,30 @@ def most_corr_vec(X           : np.ndarray                 ,
 
     # Get the correlation of our chosen vectors against the full universe 
     # -- giving an HxM matrix (H the length of labs).
+    Y         = X.copy()    # Make a copy of <X> -- full universe.
     X1        = X[idx,:]    # Get only the H <labs> vectors.
-    X1.shape   = (H, 1, N)   # expand for broadcasting, use only the <lab> vectors.
-    Y.shape   = (1, M, N)   # Expand for broadcasting and use the full set of vectors.
-    wss.shape = (1, 1, N)   # Expand for broadcasting.
+    X1.shape  = (H, 1, N)   # Expand <X1> for broadcasting, use only the <lab> vectors.
+    Y.shape   = (1, M, N)   # Expand <Y> for broadcasting and use the full set of vectors.
+    wss.shape = (1, 1, N)   # Expand <wss> for broadcasting.
  
     # Find the "worst" correlation value.
     worst_corr_val = get_worst_corr(corr_type)
 
     # Compute correlation matrix of the <labs> vectors against the universe -- <ulabs> vectors.
     # Set self correlation to -infinity for only the <labs> rows of the correlation matrix.
-    corr = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))   # Aggregation of third index.
+    # These operations aggregate the third index.
+    corr = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))
 
     # Set NaNs to 0.
     corr[np.isnan(corr)] = 0.0
 
+    # Form HxM correlation matrix, <corr>.
     ind = np.arange(len(labs))
     corr[ind, idx] = worst_corr_val  # Array slicing -- fill "diagonal" with worst corr val
                                      # -- effectively eliminating themselves as "best" correlate.
 
-    # If <exclude_labs> is not None, set correlations will all these <labs> 
-    # vectors to worst correlation to exclude them from consideration.
+    # If <exclude_labs> is not None, set correlations of these vector with <labs> 
+    # vectors to worst correlation -- to exclude them from consideration.
     if type(eidx) != type(None):
         corr[np.ix_(ind, eidx)] = worst_corr_val
 
@@ -421,8 +444,10 @@ def most_corr_vec(X           : np.ndarray                 ,
     bidx = get_best_corr_idx(corr, ind, corr_type)
     val = corr[ind, bidx]
 
-    # Return a Dataframe of vector labels; the most correlated vector(its label); and their correlation.
+    # Return a Pandas Dataframe consisting of <labs>; 
+    # the most correlated vectors(their labels); and their correlation with <labs>.
     return pd.DataFrame({'lab' : labs, 'best_correlate': ulabs[bidx], 'best_corr' : val})
+
 
 
 def most_corr_vecs(X           : np.ndarray                 ,
@@ -481,6 +506,7 @@ def most_corr_vecs(X           : np.ndarray                 ,
     if not ws:
         ws = np.ones(N)
 
+    # Copy weights as we will reshape them.
     wss = ws.copy()
 
     # Normalize the weights.
@@ -491,7 +517,6 @@ def most_corr_vecs(X           : np.ndarray                 ,
     mn       = np.sum(X * wss, axis=1) # Vector means.
     mn.shape = (M, 1)                 # Expand for broadcasting.
     X        = X - mn
-    Y        = X.copy()
 
     # Get the index of each security of interest.
     idx = np.array([lab_dict[lab] for lab in labs])
@@ -503,10 +528,11 @@ def most_corr_vecs(X           : np.ndarray                 ,
 
     # Get the correlation of our chosen vectors against the full universe 
     # -- giving an HxM matrix (H the length of labs)
+    Y         = X.copy()    # Full universe.
     X1        = X[idx,:]    # Get only the <labs> vectors.
-    X1.shape  = (H, 1, N)   # Expand for broadcasting.
-    Y.shape   = (1, M, N)   # Expand for broadcasting and use the full set of vectors.
-    wss.shape = (1, 1, N)   # Expand ws for broadcasting.
+    X1.shape  = (H, 1, N)   # Expand <X1> for broadcasting.
+    Y.shape   = (1, M, N)   # Expand <Y> for broadcasting and use the full set of vectors.
+    wss.shape = (1, 1, N)   # Expand <wss> for broadcasting.
 
     # Find the "worst" correlation value.
     worst_corr_val = get_worst_corr(corr_type)
@@ -528,8 +554,8 @@ def most_corr_vecs(X           : np.ndarray                 ,
     idxs = get_best_corr_idxs(corr, ind, corr_type, k)
     vals = [corr[i, idxs[i]] for i in range(len(labs))] 
 
-    # Return a DataFrame of vector labels; the most correlated vector(its label); 
-    # and their correlation.
+    # Return a DataFrame of vector labels; the most correlated vectors(their labels); 
+    # and their correlations.
     return pd.DataFrame({'lab' : labs, 'best_correlates' : ulabs[idxs].tolist(), 'best_corrs': vals })
 
 
