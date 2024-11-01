@@ -325,6 +325,7 @@ def corr(X           : np.ndarray                 ,
     corr = np.sum(X * Y * wss, axis=2) / np.sqrt( np.sum(X * X * wss, axis=2) * np.sum(Y * Y * wss, axis=2) )
 
     # Set NaNs to 0.
+    # The reasoning: This value represents "least correlated".
     corr[np.isnan(corr)] = 0.0
 
     # Return <X> to its original shape.
