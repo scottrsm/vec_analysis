@@ -427,8 +427,8 @@ def most_corr_vec(X           : np.ndarray                 ,
     # These operations aggregate the third index.
     corr = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))
 
-    # Set NaNs to 0.
-    corr[np.isnan(corr)] = 0.0
+    # Set NaNs to worst correlation value.
+    corr[np.isnan(corr)] = worst_corr_val 
 
     # Form HxM correlation matrix, <corr>.
     ind = np.arange(len(labs))
@@ -542,8 +542,9 @@ def most_corr_vecs(X           : np.ndarray                 ,
     corr           = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))  
     corr[ind, idx] = worst_corr_val  # Array slicing -- fill "diagonal" with worst corr val.
                                      # -- effectively eliminating themselves as their "best" correlate.
-    # Set NaNs to 0.
-    corr[np.isnan(corr)] = 0.0
+
+    # Set NaNs to worst correlation value.
+    corr[np.isnan(corr)] = worst_corr_val
 
     # If <exclude_labs> is not None, set correlations will all these <labs> 
     # vectors to "worst" correlation to exclude them from consideration.
