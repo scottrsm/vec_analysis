@@ -364,7 +364,8 @@ def most_corr_vec(X           : np.ndarray                 ,
         chk_contract: A boolean, defaults to True meaning, check the input parameter contract.
         ws          : (Optional) A N numeric weight vector of non-negative values.
                                  Defaults to uniform.
-        exclude_labs: (Optional) A list of labels in the larger universe, <ulabs>, to exclude in the correlation analysis.
+        exclude_labs: (Optional) A list of labels in the larger universe, <ulabs>, 
+                                 to exclude in the correlation analysis.
 
         Packages
         --------
@@ -373,7 +374,10 @@ def most_corr_vec(X           : np.ndarray                 ,
 
         Return
         ------
-        A Pandas DataFrame with schema: lab(vector label), best_correlate(vector label), best_corr(their correlation)
+        A Pandas DataFrame with schema: 
+            lab(vector label), best_correlate(vector label), 
+            best_corr(their correlation)                   , 
+            valid_cnt(1 if correlate is valid, 0 otherwise)
 
         Throws
         ------
@@ -416,8 +420,8 @@ def most_corr_vec(X           : np.ndarray                 ,
     # -- giving an HxM matrix (H the length of labs).
     Y         = X.copy()    # Make a copy of <X> -- full universe.
     X1        = X[idx,:]    # Get only the H <labs> vectors.
-    X1.shape  = (H, 1, N)   # Expand <X1> for broadcasting, use only the <lab> vectors.
-    Y.shape   = (1, M, N)   # Expand <Y> for broadcasting and use the full set of vectors.
+    X1.shape  = (H, 1, N)   # Expand <X1>  for broadcasting, use only the <lab> vectors.
+    Y.shape   = (1, M, N)   # Expand <Y>   for broadcasting and use the full set of vectors.
     wss.shape = (1, 1, N)   # Expand <wss> for broadcasting.
  
     # Find the "worst" correlation value.
@@ -443,11 +447,15 @@ def most_corr_vec(X           : np.ndarray                 ,
 
     # Get the top correlate position and value.
     bidx = get_best_corr_idx(corr, ind, corr_type)
-    val = corr[ind, bidx]
+    val  = corr[ind, bidx]
+    cnt  = [np.sum(val[i] != worst_corr_val) for i in range(len(labs))]
 
     # Return a Pandas Dataframe consisting of <labs>; 
     # the most correlated vectors(their labels); and their correlation with <labs>.
-    return pd.DataFrame({'lab' : labs, 'best_correlate': ulabs[bidx], 'best_corr' : val})
+    return pd.DataFrame({'lab'           : labs       , 
+                         'best_correlate': ulabs[bidx], 
+                         'best_corr'     : val        , 
+                         'valid_cnt'     : cnt}        )
 
 
 
@@ -462,7 +470,8 @@ def most_corr_vecs(X           : np.ndarray                 ,
                    exclude_labs: Optional[np.ndarray] = None,
                    chk_contract: bool = True                 ) -> pd.DataFrame:
     """!
-        Determine the "most" correlated k vectors from a larger universe for each vector in a smaller subset.
+        Determine the "most" correlated k vectors from a larger universe for 
+        each vector in a smaller subset.
 
         Parameters
         ---------
@@ -485,8 +494,13 @@ def most_corr_vecs(X           : np.ndarray                 ,
 
         Return
         ------
-        A Pandas Dataframe of length H with schema: lab(vector label), top_correlates(vector label), top_corrs(their correlation)
-        Note: The order of the top_correlates and top_corrs is from "best" to "worse" correlated where what is "best" is 
+        A Pandas Dataframe of length H with schema: 
+            lab(vector label)                      , 
+            best_correlates(vector label)          , 
+            best_corrs(their correlation)          , 
+            valid_cnt(number of valid correlations)
+        Note: The order of the best_correlates and best_corrs is from 
+              "best" to "worst" correlated where what is "best" is 
               determined by <corr_type>.
 
         Throws
@@ -516,7 +530,7 @@ def most_corr_vecs(X           : np.ndarray                 ,
     # Subtract off row means.
     # Note: np.sum only works to compute mean if <wss> is normalized.
     mn       = np.sum(X * wss, axis=1) # Vector means.
-    mn.shape = (M, 1)                 # Expand for broadcasting.
+    mn.shape = (M, 1)                  # Expand for broadcasting.
     X        = X - mn
 
     # Get the index of each security of interest.
@@ -531,8 +545,8 @@ def most_corr_vecs(X           : np.ndarray                 ,
     # -- giving an HxM matrix (H the length of labs)
     Y         = X.copy()    # Full universe.
     X1        = X[idx,:]    # Get only the <labs> vectors.
-    X1.shape  = (H, 1, N)   # Expand <X1> for broadcasting.
-    Y.shape   = (1, M, N)   # Expand <Y> for broadcasting and use the full set of vectors.
+    X1.shape  = (H, 1, N)   # Expand <X1>  for broadcasting.
+    Y.shape   = (1, M, N)   # Expand <Y>   for broadcasting and use the full set of vectors.
     wss.shape = (1, 1, N)   # Expand <wss> for broadcasting.
 
     # Find the "worst" correlation value.
@@ -555,9 +569,13 @@ def most_corr_vecs(X           : np.ndarray                 ,
     # Get the top <k> correlate positions and values.
     idxs = get_best_corr_idxs(corr, ind, corr_type, k)
     vals = [corr[i, idxs[i]] for i in range(len(labs))] 
+    cnts = [np.sum(vals[i] != worst_corr_val) for i in range(len(labs))]
 
     # Return a DataFrame of vector labels; the most correlated vectors(their labels); 
     # and their correlations.
-    return pd.DataFrame({'lab' : labs, 'best_correlates' : ulabs[idxs].tolist(), 'best_corrs': vals })
+    return pd.DataFrame({'lab'             : labs                , 
+                         'best_correlates' : ulabs[idxs].tolist(), 
+                         'best_corrs'      : vals                , 
+                         'valid_cnt'       : cnts }               )
 
 
