@@ -404,14 +404,16 @@ def most_corr_vec(X           : np.ndarray                 ,
 
     # Subtract off row means. 
     # Note: np.sum only works to compute mean if <wss> is normalized.
-    mn       = np.sum(X * wss, axis=1) # Vector means.
+    mn       = np.sum(X * wss, axis=1) # Vector of row means.
     mn.shape = (M, 1)                  # Expand for broadcasting.
     X        = X - mn                  # Subtract off row means.
 
-    # Get the index of each security of interest.
+    # Get the row index of each <lab> in <X>.
     idx = np.array([lab_dict[lab] for lab in labs])
 
-    # If <exclude_labs> is not None, find their row indices in the correlation matrix.
+    # If <exclude_labs> is not None, find their row indices in <X>.
+    # These will be used as column indices in the new HxM 
+    # correlation matrix, <corr>, below.
     eidx = None
     if type(exclude_labs) != type(None):
         eidx = np.array([lab_dict[lab] for lab in exclude_labs])
@@ -419,39 +421,42 @@ def most_corr_vec(X           : np.ndarray                 ,
     # Get the correlation of our chosen vectors against the full universe 
     # -- giving an HxM matrix (H the length of labs).
     Y         = X.copy()    # Make a copy of <X> -- full universe.
-    X1        = X[idx,:]    # Get only the H <labs> vectors.
-    X1.shape  = (H, 1, N)   # Expand <X1>  for broadcasting, use only the <lab> vectors.
-    Y.shape   = (1, M, N)   # Expand <Y>   for broadcasting and use the full set of vectors.
+    X1        = X[idx,:]    # Get only the H <labs> universe.
+    X1.shape  = (H, 1, N)   # Expand <X1>  for broadcasting, use only the <lab> universe.
+    Y.shape   = (1, M, N)   # Expand <Y>   for broadcasting and use the full universe.
     wss.shape = (1, 1, N)   # Expand <wss> for broadcasting.
  
     # Find the "worst" correlation value.
     worst_corr_val = get_worst_corr(corr_type)
 
-    # Compute correlation matrix of the <labs> vectors against the universe -- <ulabs> vectors.
-    # Set self correlation to -infinity for only the <labs> rows of the correlation matrix.
-    # These operations aggregate the third index.
+    # Compute correlation matrix (HxM) of the <labs> vectors against 
+    # the universe -- <ulabs> vectors. These operations aggregate the third index.
     corr = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))
 
     # Set NaNs to worst correlation value.
     corr[np.isnan(corr)] = worst_corr_val 
 
-    # Form HxM correlation matrix, <corr>.
-    ind = np.arange(len(labs))
+    # Set self correlation to "worst" value.
+    # <ind> and <idx> are respectively the row and column indices of <labs>
+    # in <corr>.
+    ind = np.arange(H)
     corr[ind, idx] = worst_corr_val  # Array slicing -- fill "diagonal" with worst corr val
                                      # -- effectively eliminating themselves as "best" correlate.
 
-    # If <exclude_labs> is not None, set correlations of these vector with <labs> 
-    # vectors to worst correlation -- to exclude them from consideration.
+    # If <exclude_labs> is not None, set correlations will <labs> 
+    # vectors to "worst" correlation so as to exclude them from consideration.
     if type(eidx) != type(None):
-        corr[np.ix_(ind, eidx)] = worst_corr_val
+        corr[np.ix_(ind, eidx)] = worst_corr_val # Create index "mesh"
 
-    # Get the top correlate position and value.
+    # For each vector in <labs>, get the top correlate, its index, and if 
+    # the correlation is valid.
     bidx = get_best_corr_idx(corr, ind, corr_type)
     val  = corr[ind, bidx]
-    cnt  = [np.sum(val[i] != worst_corr_val) for i in range(len(labs))]
+    cnt  = [np.sum(val[i] != worst_corr_val) for i in range(H)]
 
     # Return a Pandas Dataframe consisting of <labs>; 
-    # the most correlated vectors(their labels); and their correlation with <labs>.
+    # the most correlated vectors(their index values); their correlation with <labs>;
+    # and if the best correlate is valid; 1 for yes, 0 for no.
     return pd.DataFrame({'lab'           : labs       , 
                          'best_correlate': ulabs[bidx], 
                          'best_corr'     : val        , 
@@ -529,22 +534,24 @@ def most_corr_vecs(X           : np.ndarray                 ,
 
     # Subtract off row means.
     # Note: np.sum only works to compute mean if <wss> is normalized.
-    mn       = np.sum(X * wss, axis=1) # Vector means.
+    mn       = np.sum(X * wss, axis=1) # Vector of row means.
     mn.shape = (M, 1)                  # Expand for broadcasting.
-    X        = X - mn
+    X        = X - mn                  # Subtract off row means.
 
-    # Get the index of each security of interest.
+    # Get the row index of each <lab> in <X>.
     idx = np.array([lab_dict[lab] for lab in labs])
 
-    # If exclude_labs is not None, find their row indices in the correlation matrix.
+    # If <exclude_labs> is not None, find their row indices in <X>.
+    # These will be used as column indices in the new HxM 
+    # correlation matrix, <corr>, below.
     eidx = None
     if type(exclude_labs) != type(None):
-        eidx = np.array([lab_dict[lab] for lab in exclude_labs])
+        eidx = np.array([lab_dict[lab] for lab in exclude_labs]) 
 
     # Get the correlation of our chosen vectors against the full universe 
     # -- giving an HxM matrix (H the length of labs)
     Y         = X.copy()    # Full universe.
-    X1        = X[idx,:]    # Get only the <labs> vectors.
+    X1        = X[idx,:]    # Select just the <labs> from the universe.
     X1.shape  = (H, 1, N)   # Expand <X1>  for broadcasting.
     Y.shape   = (1, M, N)   # Expand <Y>   for broadcasting and use the full set of vectors.
     wss.shape = (1, 1, N)   # Expand <wss> for broadcasting.
@@ -553,26 +560,33 @@ def most_corr_vecs(X           : np.ndarray                 ,
     worst_corr_val = get_worst_corr(corr_type)
     
     # Compute correlation matrix H(length of labs) x M(all vectors in the universe). 
-    ind = np.arange(len(labs))
     corr           = np.sum(X1 * Y * wss, axis=2) / np.sqrt(np.sum(X1 * X1 * wss, axis=2) * np.sum(Y * Y * wss, axis=2))  
+
+    # Set self correlation to "worst" value.
+    # <ind> and <idx> are respectively the row and column indices of <labs>
+    # in <corr>.
+    ind            = np.arange(H)
     corr[ind, idx] = worst_corr_val  # Array slicing -- fill "diagonal" with worst corr val.
                                      # -- effectively eliminating themselves as their "best" correlate.
 
     # Set NaNs to worst correlation value.
+    # It is possible that we have vectors  with "close" to zero element values,
+    # there correlation might be NaN.
     corr[np.isnan(corr)] = worst_corr_val
 
-    # If <exclude_labs> is not None, set correlations will all these <labs> 
-    # vectors to "worst" correlation to exclude them from consideration.
+    # If <exclude_labs> is not None, set correlations will <labs> 
+    # vectors to "worst" correlation so as to exclude them from consideration.
     if type(eidx) != type(None):
-        corr[np.ix_(ind, eidx)] = worst_corr_val
+        corr[np.ix_(ind, eidx)] = worst_corr_val   # Create an index "mesh"
 
-    # Get the top <k> correlate positions and values.
+    # For each vector in <labs>, get the top <k> correlate indexes, correlations, 
+    # and count of valid correlates.
     idxs = get_best_corr_idxs(corr, ind, corr_type, k)
-    vals = [corr[i, idxs[i]] for i in range(len(labs))] 
-    cnts = [np.sum(vals[i] != worst_corr_val) for i in range(len(labs))]
+    vals = [corr[i, idxs[i]] for i in range(H)] 
+    cnts = [np.sum(vals[i] != worst_corr_val) for i in range(H)]
 
     # Return a DataFrame of vector labels; the most correlated vectors(their labels); 
-    # and their correlations.
+    # their correlations; and the count of valid correlates.
     return pd.DataFrame({'lab'             : labs                , 
                          'best_correlates' : ulabs[idxs].tolist(), 
                          'best_corrs'      : vals                , 
