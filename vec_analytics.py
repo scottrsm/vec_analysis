@@ -241,12 +241,13 @@ def wgt_quantiles_tensor(VS     :np.ndarray ,
 
 
 
-def corr(X      : np.ndarray                 , 
-         eps    : float = 1.0e-6             ,
-         ws     : Optional[np.ndarray] = None, 
-         chk_con: bool = False                ) -> np.ndarray:
+def corr_cov(X      : np.ndarray                 , 
+             eps    : float = 1.0e-6             ,
+             ws     : Optional[np.ndarray] = None, 
+             corr   : bool=True                  ,
+             chk_con: bool = False                ) -> np.ndarray:
     """!
-        Find the correlation between M vectors of length N, represented as the MxN matrix, <X>.
+        Find the correlation or empirical covariance between M vectors of length N, represented as the MxN matrix, <X>.
 
         Arguments:
         ----------
@@ -254,13 +255,14 @@ def corr(X      : np.ndarray                 ,
 
 
         Keyword Arguments:
-        eps    : A float value. The sum of the weights should be larger than this value.
+        eps    : (Optional) A float value. The sum of the weights should be larger than this value.
         ws     : (Optional) A N numeric vector of weights of non-negative values.
-        chk_con: A boolean, defaults to Fals; meaning, do NOT check the input contract -- see below.
+        corr   : (Optional) If True, compute the correlation; otherwise, compute empirical covariance.
+        chk_con: (Optional) A boolean, defaults to Fals; meaning, do NOT check the input contract -- see below.
 
         Return
         ------
-        A MxM correlation matrix of the M vectors.
+        A MxM correlation, or emprical covariance matrix of the M vectors.
 
         Input Contract:
         1. X is a 2-D numpy array.
@@ -280,15 +282,16 @@ def corr(X      : np.ndarray                 ,
     """
 
     # Optionally check input contract for <X>.
+    nm = "corr_cov"
     if chk_con:
         if type(X) != np.ndarray:
-            raise ValueError("corr: The parameter, X, is not a numpy array.")
+            raise ValueError(f"{nm}: The parameter, X, is not a numpy array.")
 
         if len(X.shape) != 2:
-            raise ValueError("corr: Parameter, X, is not a matrix.")
+            raise ValueError(f"{nm}: Parameter, X, is not a matrix.")
 
         if type(eps) == type(0.0) and eps <= 0.0:
-            raise ValueError("corr: Parameter, eps, is not a positive number.")
+            raise ValueError("{nm}: Parameter, eps, is not a positive number.")
 
 
     # Get shape of <X>.
@@ -298,21 +301,21 @@ def corr(X      : np.ndarray                 ,
     if chk_con:
         if type(ws) != type(None):
             if type(ws) != np.ndarray:
-                raise ValueError("corr: The parameter, ws, is not a numpy array.")
+                raise ValueError(f"{nm}: The parameter, ws, is not a numpy array.")
 
             if len(ws.shape) != 1:
-                raise ValueError("corr: Parameter, ws, is not a 1-d numpy array.")
+                raise ValueError(f"{nm}: Parameter, ws, is not a 1-d numpy array.")
 
             if N != len(ws):
-                raise ValueError("corr: Parameter, X, and, ws, are not compatible.")
+                raise ValueError(f"{nm}: Parameter, X, and, ws, are not compatible.")
 
             if np.any(ws < 0):
-                raise ValueError("corr: Parameter, ws, has some negative elements.")
+                raise ValueError(f"{nm}: Parameter, ws, has some negative elements.")
 
             if np.sum(ws) < eps:
-                raise ValueError("corr: Parameter, ws, has cumulative sum that is less than eps({eps}).")
+                raise ValueError(f"{nm}: Parameter, ws, has cumulative sum that is less than eps({eps}).")
 
-    # If not given set ws to its default setting -- uniform weights.
+    # If not given, set ws to its default setting -- uniform weights.
     if type(ws) is type(None):
         ws = np.ones(N)
 
@@ -337,18 +340,21 @@ def corr(X      : np.ndarray                 ,
     wss.shape = (1, 1, N)
 
     # Now use aggregation to sum up the third index -- the values -- to get 
-    # an MxM correlation matrix.
-    corr = np.sum(X * Y * wss, axis=2) / np.sqrt( np.sum(X * X * wss, axis=2) * np.sum(Y * Y * wss, axis=2) )
+    # an MxM correlation/covariance matrix.
+    if corr:
+        cmat = np.sum(X * Y * wss, axis=2) / np.sqrt( np.sum(X * X * wss, axis=2) * np.sum(Y * Y * wss, axis=2) )
+    else:
+        cmat = np.sum(X * Y * wss, axis=2) / ( 1.0 - np.sum(wss * wss) )
 
     # Set NaNs to 0.
     # The reasoning: This value represents "least correlated".
-    corr[np.isnan(corr)] = 0.0
+    cmat[np.isnan(cmat)] = 0.0
 
     # Return <X> to its original shape.
     X.shape = (M, N)
 
-    # Return the (weighted) correlation matrix.
-    return corr
+    # Return the (weighted) correlation/covariance matrix.
+    return cmat
 
 
 
