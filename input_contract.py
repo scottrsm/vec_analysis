@@ -24,35 +24,39 @@ def chk_wgt_quantiles_contract(vs :np.ndarray,
     ValueError
 
     """
+
+    # The name of the function whose arguments we are checking.
+    nm = "wgt_quantiles"
+
     # 1. Are vs, wts, and qs are numpy arrays?
     if type(vs)  != np.ndarray:
-        raise ValueError('wgt_quantiles: <vs> : Not a numpy array.'     )
+        raise ValueError(f"{nm}: <vs> : Not a numpy array."     )
     if len(vs.shape) != 1:
-        raise ValueError('wgt_quantiles: <vs>: Not a 1-D numpy array.'  )
+        raise ValueError(f"{nm}: <vs>: Not a 1-D numpy array."  )
     if type(wts) != np.ndarray:
-        raise ValueError('wgt_quantiles: <wts>: Not a numpy array.'     )
+        raise ValueError(f"{nm}: <wts>: Not a numpy array."     )
     if len(wts.shape) != 1:
-        raise ValueError('wgt_quantiles: <wts>: Not a 1-D numpy array.' )
+        raise ValueError(f"{nm}: <wts>: Not a 1-D numpy array." )
     if type(qs)  != np.ndarray:
-        raise ValueError('wgt_quantiles: <qs> : Not a numpy array.'     )
+        raise ValueError(f"{nm}: <qs> : Not a numpy array."     )
     if len(qs.shape) != 1:
-        raise ValueError('wgt_quantiles: <qs>: Not a 1-D numpy array.'  )
+        raise ValueError(f"{nm}: <qs>: Not a 1-D numpy array."  )
     
     # 2. All qs values in [0.0, 1.0]?
     if any((qs < 0.0) | (qs > 1.0)):
-        raise ValueError('wgt_quantiles: <qs>: Not a proper quantiles array.')
+        raise ValueError(f"{nm}: <qs>: Not a proper quantiles array.")
   
     # 3. The length of vs and wts is the same?
     if np.size(vs) != np.size(wts):
-        raise ValueError('wgt_quantiles: <vs> and <wts> do not have the same length.')
+        raise ValueError(f"{nm}: <vs> and <wts> do not have the same length.")
 
     # 4. all wts >= 0?
     if any(wts < 0.0):
-        raise ValueError('wgt_quantiles: <wts> has one or more negative elements.')
+        raise ValueError(f"{nm}: <wts> has one or more negative elements.")
 
     # 5. sum(wts) > 0?
     if sum(wts) <= 0:
-        raise ValueError('wgt_quantiles: The sum of the elements of <wts> is not positive.')
+        raise ValueError(f"{nm}: The sum of the elements of <wts> is not positive.")
       
 
 
@@ -78,39 +82,42 @@ def chk_wgt_quantiles_tensor_contract(VS :np.ndarray,
     Throws
     ------
     ValueError
-
     """
+    
+    # The name of the function whose arguments we are checking.
+    nm = "wgt_quantiles_tensor"
+
     # 1. Are <VS> and <wts> are numpy arrays?
     if type(wts) != np.ndarray:
-        raise ValueError('wgt_quantiles_tensor: <wts>: Not a numpy array.'  )
+        raise ValueError(f"{nm}: <wts>: Not a numpy array."  )
     if len(wts.shape) != 1:
-        raise ValueError('wgt_quantiles_tensor: <wts>: Not a 1-D array.'    )
+        raise ValueError(f"{nm}: <wts>: Not a 1-D array."    )
     if type(qs) != np.ndarray:
-        raise ValueError('wgt_quantiles_tensor: <qs>: Not a numpy array.'   ) 
+        raise ValueError(f"{nm}: <qs>: Not a numpy array."   ) 
     if len(qs.shape) != 1:
-        raise ValueError('wgt_quantiles_tensor: <qs>: Not a 1-D array.'     )
+        raise ValueError(f"{nm}: <qs>: Not a 1-D array."     )
 
     # 2. Is <VS> is a numpy matrix?
     if type(VS)  != np.ndarray:
-        raise ValueError('wgt_quantiles_tensor: <VS>: Not a numpy array.'   )
+        raise ValueError(f"{nm}: <VS>: Not a numpy array."   )
     if len(VS.shape) != 2:
-        raise ValueError('wgt_quantiles_tensor: <VS>: Not a numpy matrix.'  )
+        raise ValueError(f"{nm}: <VS>: Not a numpy matrix."  )
 
     # 3. All <qs> values in [0.0, 1.0]?
     if any((qs < 0.0) | (qs > 1.0)):
-        raise ValueError('wgt_quantiles_tensor: <qs>: Not a proper quantiles array.')
+        raise ValueError(f"{nm}: <qs>: Not a proper quantiles array.")
   
     # 4. The length of <VS> rows and the length of <wts> are the same?
     if np.size(VS[0]) != np.size(wts):
-        raise ValueError("wgt_quantiles_tensor: The rows of <VS> don't have the same length as <wts>.")
+        raise ValueError(f"{nm}: The rows of <VS> don't have the same length as <wts>.")
 
     # 5. Are all <wts> elements >= 0?
     if any(wts < 0.0):
-        raise ValueError('wgt_quantiles_tensor: Weights array, <wts>, has one or more negative elements.')
+        raise ValueError(f"{nm}: Weights array, <wts>, has one or more negative elements.")
 
     # 6. Is sum(wts) > 0?
     if sum(wts) <= 0:
-        raise ValueError('wgt_quantiles_tensor: The sum of the elements of <wts> is not positive.')
+        raise ValueError(f"{nm}: The sum of the elements of <wts> is not positive.")
   
 
 def check_most_corr_vec_input_contract(X           :np.ndarray          ,
@@ -155,36 +162,40 @@ def check_most_corr_vec_input_contract(X           :np.ndarray          ,
         ValueError
 
     """
+
+    # The name of the function whose arguments we are checking.
+    nm = "most_corr_vec"
+
     # 1a.
     if type(labs) != np.ndarray:
-        raise ValueError("most_corr_vecs: The parameter, labs, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, labs, is not a numpy array.")
     
     if len(labs.shape) != 1:
-        raise ValueError("most_corr_vec: The parameter, labs, is not a 1-d numpy array.")
+        raise ValueError(f"{nm}: The parameter, labs, is not a 1-d numpy array.")
 
     # 1b.
     if type(ulabs) != np.ndarray:
-        raise ValueError("most_corr_vec: The parameter, ulabs, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, ulabs, is not a numpy array.")
 
     if len(ulabs.shape) != 1:
-        raise ValueError("most_corr_vec: The parameter, ulabs, is not a 1-d numpy array.")
+        raise ValueError(f"{nm}: The parameter, ulabs, is not a 1-d numpy array.")
 
     # 2.
     if type(X) != np.ndarray:
-        raise ValueError("most_corr_vec: The parameter, X, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, X, is not a numpy array.")
 
     if len(X.shape) != 2:
-        raise ValueError("most_corr_vec: The parameter, X, is not a 2-d numpy array.")
+        raise ValueError(f"{nm}: The parameter, X, is not a 2-d numpy array.")
 
     # 3.
     if np.any(X == -np.inf):
-        raise ValueError("most_corr_vec: Parameter, X, has at least one -numpy.inf value.")
+        raise ValueError(f"{nm}: Parameter, X, has at least one -numpy.inf value.")
 
     if np.any(X == np.inf):
-        raise ValueError("most_corr_vec: Parameter, X, has at least one numpy.inf value.")
+        raise ValueError(f"{nm}: Parameter, X, has at least one numpy.inf value.")
 
     if np.any(np.isnan(X)):
-        raise ValueError("most_corr_vec: Parameter, X, has at least one numpy.nan value.")
+        raise ValueError(f"{nm}: Parameter, X, has at least one numpy.nan value.")
 
     # Need shape info for checking.
     M, N = X.shape
@@ -192,48 +203,48 @@ def check_most_corr_vec_input_contract(X           :np.ndarray          ,
     # 4. Check <ws>.
     if type(ws) != type(None):
         if type(ws) != np.ndarray:
-            raise ValueError("most_corr_vec: The parameter, ws, is not a numpy array.")
+            raise ValueError(f"{nm}: The parameter, ws, is not a numpy array.")
 
         if N != len(ws):
-            raise ValueError("most_corr_vec: Parameter, X, and, ws, are not compatible.")
+            raise ValueError(f"{nm}: Parameter, X, and, ws, are not compatible.")
             
         if np.any(ws < 0):
-            raise ValueError("most_corr_vec: Parameter, ws, has some negative elements.")
+            raise ValueError(f"{nm}: Parameter, ws, has some negative elements.")
 
         if np.sum(ws) < eps:
-            raise ValueError(f"most_corr_vec: Parameter, ws, has cumulative sum that is less than eps({eps}).")
+            raise ValueError(f"{nm}: Parameter, ws, has cumulative sum that is less than eps({eps}).")
 
         if np.any(ws == -np.inf):
-            raise ValueError("most_corr_vec: Parameter, ws, has at least one -numpy.inf value.")
+            raise ValueError(f"{nm}: Parameter, ws, has at least one -numpy.inf value.")
 
         if np.any(ws == np.inf):
-            raise ValueError("most_corr_vec: Parameter, ws, has at least one numpy.inf value.")
+            raise ValueError(f"{nm}: Parameter, ws, has at least one numpy.inf value.")
 
         if np.any(np.isnan(ws)):
-            raise ValueError("most_corr_vec: Parameter, ws, has at least one numpy.nan value.")
+            raise ValueError(f"{nm}: Parameter, ws, has at least one numpy.nan value.")
 
     # 5. Are <ulabs> the same length as the number of N-vectors?
     if len(ulabs) != M:
-        raise ValueError(f"most_corr_vec: The length of ulabs({len(ulabs)}) does not match the first dimension of X({M}).")
+        raise ValueError(f"{nm}: The length of ulabs({len(ulabs)}) does not match the first dimension of X({M}).")
 
     # 6. Are <ulabs> are unique?
     if len(np.unique(ulabs)) != len(ulabs):
-        raise ValueError("most_corr_vec: The labels for the universe are not unique.")
+        raise ValueError(f"{nm}: The labels for the universe are not unique.")
 
     # 7. Is <labs> a subset of <ulabs>?
     if not np.all(np.isin(labs, ulabs)):
-        raise ValueError("most_corr_vec: Not all labels in, labs, are in the universe of labels, ulabs.")
+        raise ValueError(f"{nm}: Not all labels in, labs, are in the universe of labels, ulabs.")
 
     # 8. If non-null, is <exclude_labs> a subset of the keys of <ulabs>?
     if type(exclude_labs) != type(None):
         if type(exclude_labs) != np.ndarray:
-            raise ValueError("most_corr_vec: The parameter, exclude_labs, is not a numpy array.")
+            raise ValueError(f"{nm}: The parameter, exclude_labs, is not a numpy array.")
         if not np.all(np.isin(exclude_labs, ulabs)):
-            raise ValueError("most_corr_vec: Not all labels in, exclude_labs, are in the universe of labels, ulabs.")
+            raise ValueError(f"{nm}: Not all labels in, exclude_labs, are in the universe of labels, ulabs.")
 
     # 9. Is <ulabs> a subset of the keys of <lab_dict>?
     if not np.all(np.isin(ulabs, np.array(list(lab_dict.keys())))):
-        raise ValueError("most_corr_vec: Not all labels in, ulabs, are keys in lab_dict.")
+        raise ValueError(f"{nm}: Not all labels in, ulabs, are keys in lab_dict.")
 
 
 
@@ -281,36 +292,40 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
         ValueError
 
     """
+    
+    # The name of the function whose arguments we are checking.
+    nm = "most_corr_vecs"
+    
     # 1a.
     if type(labs) != np.ndarray:
-        raise ValueError("most_corr_vecs: The parameter, labs, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, labs, is not a numpy array.")
 
     if len(labs.shape) != 1:
-        raise ValueError("most_corr_vecs: The parameter, labs, is not a 1-d numpy array.")
+        raise ValueError(f"{nm}: The parameter, labs, is not a 1-d numpy array.")
 
     # 1b.
     if type(ulabs) != np.ndarray:
-        raise ValueError("most_corr_vecs: The parameter, ulabs, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, ulabs, is not a numpy array.")
 
     if len(ulabs.shape) != 1:
-        raise ValueError("most_corr_vecs: The parameter, ulabs, is not a 1-d numpy array.")
+        raise ValueError(f"{nm}: The parameter, ulabs, is not a 1-d numpy array.")
 
     # 2.
     if type(X) != np.ndarray:
-        raise ValueError("most_corr_vecs: The parameter, ulabs, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, ulabs, is not a numpy array.")
 
     if len(X.shape) != 2:
-        raise ValueError("most_corr_vecs: The parameter, X, is not a 2-d numpy array.")
+        raise ValueError(f"{nm}: The parameter, X, is not a 2-d numpy array.")
 
     # 3. Are the values of X valid?
     if np.any(X == -np.inf):
-        raise ValueError("most_corr_vecs: Parameter, X, has at least one -numpy.inf value.")
+        raise ValueError(f"{nm}: Parameter, X, has at least one -numpy.inf value.")
 
     if np.any(X == np.inf):
-        raise ValueError("most_corr_vecs: Parameter, X, has at least one numpy.inf value.")
+        raise ValueError(f"{nm}: Parameter, X, has at least one numpy.inf value.")
 
     if np.any(np.isnan(X)):
-        raise ValueError("most_corr_vecs: Parameter, X, has at least one numpy.nan value.")
+        raise ValueError(f"{nm}: Parameter, X, has at least one numpy.nan value.")
 
     # Need shape info for checking.
     M, N = X.shape
@@ -318,68 +333,68 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
     # 4. Check <ws>.
     if type(ws) != type(None):
         if type(ws) != np.ndarray:
-            raise ValueError("most_corr_vecs: The parameter, ws, is not a numpy array.")
+            raise ValueError(f"{nm}: The parameter, ws, is not a numpy array.")
 
         if len(ws.shape) != 1:
-            raise ValueError("most_corr_vecs: The parameter, ws, is not a 1-d numpy array.")
+            raise ValueError(f"{nm}: The parameter, ws, is not a 1-d numpy array.")
         
         if N != len(ws):
-            raise ValueError("most_corr_vecs: Parameter, X, and, ws, are not compatible.")
+            raise ValueError(f"{nm}: Parameter, X, and, ws, are not compatible.")
             
         if np.any(ws < 0):
-            raise ValueError("most_corr_vecs: Parameter, ws, has some negative elements.")
+            raise ValueError(f"{nm}: Parameter, ws, has some negative elements.")
 
         if np.sum(ws) < eps:
-            raise ValueError(f"most_corr_vecs: Parameter, ws, has cumulative sum that is less than eps({eps}).")
+            raise ValueError(f"{nm}: Parameter, ws, has cumulative sum that is less than eps({eps}).")
 
         if np.any(ws == -np.inf):
-            raise ValueError("most_corr_vecs: Parameter, ws, has at least one -numpy.inf value.")
+            raise ValueError(f"{nm}: Parameter, ws, has at least one -numpy.inf value.")
 
         if np.any(ws == np.inf):
-            raise ValueError("most_corr_vecs: Parameter, ws, has at least one numpy.inf value.")
+            raise ValueError(f"{nm}: Parameter, ws, has at least one numpy.inf value.")
 
         if np.any(np.isnan(ws)):
-            raise ValueError("most_corr_vecs: Parameter, ws, has at least one numpy.nan value.")
+            raise ValueError(f"{nm}: Parameter, ws, has at least one numpy.nan value.")
 
     # 5. Are <ulabs> the same length as the number of M-vectors?
     if len(ulabs) != M:
-        raise ValueError(f"most_corr_vecs: The length of ulabs({len(ulabs)}) does not match the first dimension of x({M}).")
+        raise ValueError(f"{nm}: The length of ulabs({len(ulabs)}) does not match the first dimension of x({M}).")
 
     # 6. Are <ulabs> unique?
     if len(np.unique(ulabs)) != len(ulabs):
-        raise ValueError("most_corr_vecs: The labels for the universe are not unique.")
+        raise ValueError(f"{nm}: The labels for the universe are not unique.")
 
     # 7. Is <labs> a subset of <ulabs>?
     if not np.all(np.isin(labs, ulabs)):
-        raise ValueError("most_corr_vecs: Not all labels in, labs, are in the universe of labels, ulabs.")
+        raise ValueError(f"{nm}: Not all labels in, labs, are in the universe of labels, ulabs.")
 
     # 8. Is <exclude_labs> a subset of <ulabs>?
     if type(exclude_labs) != type(None):
         if type(exclude_labs) != np.ndarray:
-            raise ValueError("most_corr_vecs: The parameter, exclude_labs, is not a numpy array.")
+            raise ValueError(f"{nm}: The parameter, exclude_labs, is not a numpy array.")
 
         if not np.all(np.isin(exclude_labs, ulabs)):
-            raise ValueError("most_corr_vecs: Not all labels in, labs, are in the universe of labels, ulabs.")
+            raise ValueError(f"{nm}: Not all labels in, labs, are in the universe of labels, ulabs.")
 
     # 9a, Is <k> an integer?
     if type(k) != type(1):
-        raise ValueError(f"most_corr_vecs: The parameter, k({k}), is not an integer.")
+        raise ValueError(f"{nm}: The parameter, k({k}), is not an integer.")
 
     # 9b, Is <k> > 0?
     if k <= 0:
-        raise ValueError(f"most_corr_vecs: The parameter, k({k}), is not positive.")
+        raise ValueError(f"{nm}: The parameter, k({k}), is not positive.")
 
     # 10. Are there at least <k> labels in <ulabs> less <exclude_labs>?
     if type(exclude_labs) is np.ndarray:
         if ( len(ulabs) - len(exclude_labs) ) < k:
-            raise ValueError(f"most_corr_vecs: The expression, (ulabs - exclude_labs), has less than k({k}) elements.")
+            raise ValueError(f"{nm}: The expression, (ulabs - exclude_labs), has less than k({k}) elements.")
     else:  
         if len(ulabs) < k:
-            raise ValueError(f"most_corr_vecs: The parameter, ulabs, has less than k({k}) elements.")
+            raise ValueError(f"{nm}: The parameter, ulabs, has less than k({k}) elements.")
 
     # 11. Is <labs> a subset of the keys of <lab_dict>?
     if not np.all(np.isin(labs, np.array(list(lab_dict.keys())))):
-        raise ValueError("most_corr_vecs: Not all labels in, labs, are keys in lab_dict.")
+        raise ValueError(f"{nm}: Not all labels in, labs, are keys in lab_dict.")
 
 
 

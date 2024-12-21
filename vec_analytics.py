@@ -8,6 +8,10 @@ import input_contract as ic
 class CorrType(Enum):
     """
     Enumeration type determining what "best" correlation means.
+    LEAST -- Means the smallest correlation.
+    MOST  -- Means the largest correlation.
+    LOW   -- Means the smallest correlation in absolute value.
+    HIGH  -- Means the largest corelation in absolute value.
     """
     LEAST = 1
     MOST  = 2
@@ -15,18 +19,18 @@ class CorrType(Enum):
     HIGH  = 4
 
 
-def get_worst_corr(corr_type):
+def get_worst_corr(corr_type:CorrType) -> float:
     """
-    Return the "worst" value for a given correlation enumeration type.
+    Return the "worst" possible value for a given correlation enumeration type.
     """
     val = None
-    if corr_type == CorrType.MOST:
+    if corr_type == CorrType.MOST:    # Return -infinity
         val = -np.inf
-    elif corr_type == CorrType.LEAST:
-        val = np.inf
-    elif corr_type == CorrType.HIGH:
+    elif corr_type == CorrType.LEAST: # Return  infinity
+        val = np.inf                  
+    elif corr_type == CorrType.HIGH:  # Return  zero
         val = 0.0
-    elif corr_type == CorrType.LOW:
+    elif corr_type == CorrType.LOW:   # Return  infinity
         val = np.inf
     else:
         raise ValueError(corr_type, "Unexpected CorrType.")
@@ -34,12 +38,14 @@ def get_worst_corr(corr_type):
     return val
 
 
-def get_best_corr_idx(corr, ind, corr_type):
+def get_best_corr_idx(corr:np.ndarray   , 
+                      ind :int          , 
+                      corr_type:CorrType) -> int:
     """
-    Get the "top" correlation position (column index) for 
+    Get the "most" correlated position (column index) for 
     a given row index of a correlation matrix.
     """
-    # Get the top correlate position.
+    # Get the mosted correlated position.
     idx = None
     if corr_type == CorrType.MOST:
         idx = np.argmax(corr[ind, :], axis=1) 
@@ -55,12 +61,15 @@ def get_best_corr_idx(corr, ind, corr_type):
     return idx
 
 
-def get_best_corr_idxs(corr, ind, corr_type, k):
+def get_best_corr_idxs(corr:np.ndarray   , 
+                       ind :int          , 
+                       corr_type:CorrType, 
+                       k:int              ) -> np.ndarray:
     """
     Get the "top" correlation positions (column indices) for 
     a given row index of a correlation matrix.
     """
-    # Get the top correlates positions.
+    # Get the "most" correlated positions.
     idxs = None
     if corr_type == CorrType.MOST:
         idxs = np.flip(np.argsort(corr[ind, :], axis=1)[:, -k:], axis=1)
@@ -76,31 +85,32 @@ def get_best_corr_idxs(corr, ind, corr_type, k):
     return idxs
 
 
-def wgt_quantiles(vs :np.ndarray, 
-                  ws:np.ndarray, 
-                  qs :np.ndarray ) -> np.ndarray:
+def wgt_quantiles(vs :np.ndarray    , 
+                  ws :np.ndarray    , 
+                  qs :np.ndarray    ,
+                  chk_con:bool=False ) -> np.ndarray:
     """
     Get a numpy array consisting of an array of quantile weighted <vs> values.
     
-    Parameters
+    Arguments:
     ----------
     vs    A numpy(np) (N) array of numeric values. 
     ws    A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
     qs    A numpy(np) (D) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1]).
 
-    Returns
-    -------
-    A numpy array consisting of the quantile weighted values of <vs> using weights, <ws>, for each quantile in <qs>.
-  
-    Return-Type
-    -----------
+    Keyword Arguments:
+    chk_con (Optional) If True, check input contract -- see below.
+
+    Return
+    ------
     A numpy(np) (D) array of weighted quantile <vs> values with the same length as <qs>.
   
     Packages
     --------
     numpy(np)
+    input_contract(ic)
 
-    Parameter Contract
+    Input Contract:
     -----------------
     1. vs, ws, qs are all numpy arrays.
     2. qs in [0.0, 1.0]
@@ -108,21 +118,14 @@ def wgt_quantiles(vs :np.ndarray,
     4. all(ws) >= 0
     5. sum(ws) > 0
     
-    Return
-    ------
-    A numpy array of length D.
-
     Throws
     ------
     ValueError
-
-    Assumptions
-    -----------
-    1. <vs>, <ws>, and <qs> are all numeric arrays.
     """
 
-    # Check input parameter contract.
-    ic.chk_wgt_quantiles_contract(vs, ws, qs)
+    # Check input contract.
+    if chk_con:
+        ic.chk_wgt_quantiles_contract(vs, ws, qs)
 
     # Sort the <vs> array and the associated weights.
     # Turn the weights into proper weights and create a cumulative weight array.
@@ -156,31 +159,36 @@ def wgt_quantiles(vs :np.ndarray,
     return ovs[idx]
 
 
-def wgt_quantiles_tensor(VS :np.ndarray, 
-                         ws:np.ndarray, 
-                         qs :np.ndarray ) -> np.ndarray:
+def wgt_quantiles_tensor(VS     :np.ndarray , 
+                         ws     :np.ndarray , 
+                         qs     :np.ndarray ,
+                         chk_con:bool=False  ) -> np.ndarray:
     """ 
     Compute a (D, M) numpy array consisting of the quantile weighted values of <VS> using weights, <ws>, for each quantile in <qs>.
     
-    Parameters
+    Arguments:
     ----------
     VS    A numpy(np) (D, N) matrix of numeric values. 
     ws    A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
     qs    A numpy(np) (M) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1]).
+
+    Keyword Arguments:
+    chk_con  (Optional) If True check the input contract -- see below.
   
-    Returns
+    Returns:
     -------
     A (D, M) numpy array of numeric values.
   
-    Throws
+    Throws:
     ------
     ValueError
   
-    Packages
+    Packages:
     --------
     numpy(np)
+    input_contract(ic)
   
-    Parameter Contract
+    Input Contract:
     -----------------
     1. VS, ws, and qs are numpy arrays.
     2. VS is a numpy matrix.
@@ -189,14 +197,11 @@ def wgt_quantiles_tensor(VS :np.ndarray,
     5. all(ws) >= 0
     6. sum(ws) > 0
     
-    Assumptions
-    -----------
-    1. <VS>, <ws>, and <qs> are all numeric arrays.
-
     """
   
-    # Check input parameter contract.
-    ic.chk_wgt_quantiles_tensor_contract(VS, ws, qs)
+    # Check input contract.
+    if chk_con:
+        ic.chk_wgt_quantiles_tensor_contract(VS, ws, qs)
 
     D, N  = VS.shape
     M     = qs.size
@@ -209,8 +214,8 @@ def wgt_quantiles_tensor(VS :np.ndarray,
   
     # Apply the index to the weights, where, the dimension of <ows> and <cws> expands to: (D, N).
     ows = ws[idx]
-    wss = np.sum(ows, axis=1) # sorted weight row sums.
-    ows /= wss[:, np.newaxis] # Normalize the sorted weights.
+    wss = np.sum(ows, axis=1)    # sorted weight row sums.
+    ows /= wss[:, np.newaxis]    # Normalize the sorted weights.
     cws = np.cumsum(ows, axis=1) # Get the cumulated ordered weight sum.
 
     # Reshape to broadcast. Copy <qs> so as not to modify an input.
@@ -236,27 +241,38 @@ def wgt_quantiles_tensor(VS :np.ndarray,
 
 
 
-def corr(X           : np.ndarray                 , 
-         eps         : float = 1.0e-6             ,
-         ws          : Optional[np.ndarray] = None, 
-         chk_contract:bool = True                  ) -> np.ndarray:
+def corr(X      : np.ndarray                 , 
+         eps    : float = 1.0e-6             ,
+         ws     : Optional[np.ndarray] = None, 
+         chk_con: bool = False                ) -> np.ndarray:
     """!
         Find the correlation between M vectors of length N, represented as the MxN matrix, <X>.
 
-        Parameters
+        Arguments:
         ----------
-        X           : A MxN numeric matrix representing M vectors of length N.
-        eps         : A float value. The sum of the weights should be larger than this value.
-        ws          : (Optional) A N numeric vector of weights of non-negative values.
-        chk_contract: A boolean, defaults to True meaning, check the input parameter contract.
+        X      : A MxN numeric matrix representing M vectors of length N.
 
-        Packages
-        --------
-        numpy(np)
+
+        Keyword Arguments:
+        eps    : A float value. The sum of the weights should be larger than this value.
+        ws     : (Optional) A N numeric vector of weights of non-negative values.
+        chk_con: A boolean, defaults to Fals; meaning, do NOT check the input contract -- see below.
 
         Return
         ------
         A MxM correlation matrix of the M vectors.
+
+        Input Contract:
+        1. X is a 2-D numpy array.
+        2. eps > 0.0
+        3. ws is 1-D numpy array.
+        4. |ws| = |X[0:]| 
+        5. all(ws) >= 0.0
+        6. sum(ws) >= eps
+
+        Packages
+        --------
+        numpy(np)
 
         Throws
         ------
@@ -264,7 +280,7 @@ def corr(X           : np.ndarray                 ,
     """
 
     # Optionally check input contract for <X>.
-    if chk_contract:
+    if chk_con:
         if type(X) != np.ndarray:
             raise ValueError("corr: The parameter, X, is not a numpy array.")
 
@@ -279,7 +295,7 @@ def corr(X           : np.ndarray                 ,
     M, N = X.shape
 
     # Optionally check input contract for <ws>.
-    if chk_contract:
+    if chk_con:
         if type(ws) != type(None):
             if type(ws) != np.ndarray:
                 raise ValueError("corr: The parameter, ws, is not a numpy array.")
@@ -344,7 +360,7 @@ def most_corr_vec(X           : np.ndarray                 ,
                   eps         : float = 1.0e-6             ,
                   ws          : Optional[np.ndarray] = None,
                   exclude_labs: Optional[np.ndarray] = None, 
-                  chk_contract: bool = True                 ) -> pd.DataFrame:
+                  chk_con     : bool = False                 ) -> pd.DataFrame:
     """!
         For each vector in a list, <labs>, determine the "most" (weighted) correlated 
         vector from a larger universe of <M> names, <ulabs>, using the matrix of 
@@ -352,32 +368,40 @@ def most_corr_vec(X           : np.ndarray                 ,
         also exclude some vectors from the larger universe.
         NOTE: Weights, <ws>, will be normalized by this function.
 
-        Parameters
+        Arrguments:
         ---------
         X           : A MxN matrix of M vectors, each of length N.
         labs        : An H vector of the names of the vectors of interest.
         ulabs       : The names of the larger universe of vectors.
         lab_dict    : A dictionary mapping vector labels into the row index of <X>.
                       At a minimum, the keys must include <labs>.
-        corr_type   : An element from class CorrType, default is CorrType.MOST.
-        eps         : A positive float used as a minimum cumulative weight threshold.
-        chk_contract: A boolean, defaults to True meaning, check the input parameter contract.
+
+
+        Keyword Arguments:
+        corr_type   : (Optional) An element from class CorrType, default is CorrType.MOST.
+        eps         : (Optional) A positive float used as a minimum cumulative weight threshold.
         ws          : (Optional) A N numeric weight vector of non-negative values.
-                                 Defaults to uniform.
+                                 Defaults to uniform weigths.
         exclude_labs: (Optional) A list of labels in the larger universe, <ulabs>, 
                                  to exclude in the correlation analysis.
+        chk_con     : (Optional) A boolean, defaults to False meaning, do NOT check the input contract -- see below.
+
+        Input Contract:
+
 
         Packages
         --------
         numpy(np)
         pandas(pd)
+        input_contract(ic)
 
         Return
         ------
         A Pandas DataFrame with schema: 
-            lab(vector label), best_correlate(vector label), 
-            best_corr(their correlation)                   , 
-            valid_cnt(1 if correlate is valid, 0 otherwise)
+            lab(vector label)                             , 
+            best_correlate(vector label)                  , 
+            best_corr(their correlation)                  , 
+            valid_cnt(1 if correlate is valid, 0 otherwise  )
 
         Throws
         ------
@@ -385,7 +409,7 @@ def most_corr_vec(X           : np.ndarray                 ,
      """
 
     # Optionally check input contract.
-    if chk_contract:
+    if chk_con:
         ic.check_most_corr_vec_input_contract(X, labs, ulabs, lab_dict, eps, ws, exclude_labs)
 
     # We reshape <X> for later computations.
@@ -443,7 +467,7 @@ def most_corr_vec(X           : np.ndarray                 ,
     corr[ind, idx] = worst_corr_val  # Array slicing -- fill "diagonal" with worst corr val
                                      # -- effectively eliminating themselves as "best" correlate.
 
-    # If <exclude_labs> is not None, set correlations will <labs> 
+    # If <exclude_labs> is not None, set correlations with <labs> 
     # vectors to "worst" correlation so as to exclude them from consideration.
     if type(eidx) != type(None):
         corr[np.ix_(ind, eidx)] = worst_corr_val # Create index "mesh"
@@ -473,12 +497,12 @@ def most_corr_vecs(X           : np.ndarray                 ,
                    eps         : float = 1.0e-6             ,
                    ws          : Optional[np.ndarray] = None,
                    exclude_labs: Optional[np.ndarray] = None,
-                   chk_contract: bool = True                 ) -> pd.DataFrame:
+                   chk_con     : bool = False                 ) -> pd.DataFrame:
     """!
         Determine the "most" correlated k vectors from a larger universe for 
         each vector in a smaller subset.
 
-        Parameters
+        Arguments:
         ---------
         X           : A MxN np.ndarray matrix of M vectors, each of length N.
         labs        : An H np.ndarray vector of the labels named of the vectors of interest.
@@ -486,18 +510,16 @@ def most_corr_vecs(X           : np.ndarray                 ,
         lab_dict    : A dictionary mapping vector labels into the row index of <X>.
                       At a minimum, the keys must include all values in <labs>.
         k           : Positive integer, the number of top correlates to retrieve.
-        corr_type   : An element from class CorrType, default is CorrType.MOST.
-        eps         : A positive float used as a minimum cumulative weight threshold.
+
+        Keyword Arguments:
+        corr_type   : (Optional) An element from class CorrType, default is CorrType.MOST.
+        eps         : (Optional) A positive float used as a minimum cumulative weight threshold.
         ws          : (Optional) An np.ndarray umeric weight vector of length N of non-negative values.
         exclude_labs: (Optional) An np.ndarray of labels in the larger universe, ulabs, to exclude in the correlation analysis.
-        chk_contract: A boolean, defaults to True, meaning; check the input parameter contract.
+        chk_contract: (Optional) A boolean, defaults to False, meaning; 
+                                check the input contract -- see the documentation for the function: ic.check_most_corr_vecs_input_contract.
 
-        Packages
-        --------
-        numpy(np)
-        pandas(pd)
-
-        Return
+        Return:
         ------
         A Pandas Dataframe of length H with schema: 
             lab(vector label)                      , 
@@ -508,21 +530,27 @@ def most_corr_vecs(X           : np.ndarray                 ,
               "best" to "worst" correlated where what is "best" is 
               determined by <corr_type>.
 
+
+        Packages
+        --------
+        numpy(np)
+        pandas(pd)
+        input_contract(ic)
+
         Throws
         ------
         ValueError
-
      """
 
     # Check input contract?
-    if chk_contract:
+    if chk_con:
         ic.check_most_corr_vecs_input_contract(X, labs, ulabs, lab_dict, k, eps, ws, exclude_labs)
         
     # Extract shape of <X> and of <labs>.
     M, N = X.shape
     H    = len(labs)
 
-    # If not given set <ws> to its default setting -- uniform weights.
+    # If not given, set <ws> to its default setting -- uniform weights.
     if not ws:
         ws = np.ones(N)
 
@@ -570,11 +598,11 @@ def most_corr_vecs(X           : np.ndarray                 ,
                                      # -- effectively eliminating themselves as their "best" correlate.
 
     # Set NaNs to worst correlation value.
-    # It is possible that we have vectors  with "close" to zero element values,
+    # It is possible that we have vectors with "close" to zero element values,
     # there correlation might be NaN.
     corr[np.isnan(corr)] = worst_corr_val
 
-    # If <exclude_labs> is not None, set correlations will <labs> 
+    # If <exclude_labs> is not None, set correlations with <labs> 
     # vectors to "worst" correlation so as to exclude them from consideration.
     if type(eidx) != type(None):
         corr[np.ix_(ind, eidx)] = worst_corr_val   # Create an index "mesh"
