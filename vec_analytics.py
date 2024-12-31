@@ -23,17 +23,17 @@ def get_worst_corr(corr_type:CorrType) -> float:
     """
     Return the "worst" possible value for a given correlation enumeration type.
     """
-    val = None
-    if corr_type == CorrType.MOST:    # Return -infinity
-        val = -np.inf
-    elif corr_type == CorrType.LEAST: # Return  infinity
-        val = np.inf                  
-    elif corr_type == CorrType.HIGH:  # Return  zero
-        val = 0.0
-    elif corr_type == CorrType.LOW:   # Return  infinity
-        val = np.inf
-    else:
-        raise ValueError(corr_type, "Unexpected CorrType.")
+    match corr_type:
+        case CorrType.MOST:  # Return -infinity
+            val = -np.inf
+        case CorrType.LEAST: # Return  infinity
+            val = np.inf
+        case CorrType.HIGH:  # Return  zero
+            val = 0.0 
+        case CorrType.LOW:   # Return  infinity
+            val = np.inf
+        case _:
+            raise ValueError(corr_type, "<corr_type> is not of type CorrType.")
 
     return val
 
@@ -45,18 +45,17 @@ def get_best_corr_idx(corr:np.ndarray   ,
     Get the "most" correlated position (column index) for 
     a given row index of a correlation matrix.
     """
-    # Get the mosted correlated position.
-    idx = None
-    if corr_type == CorrType.MOST:
-        idx = np.argmax(corr[ind, :], axis=1) 
-    elif corr_type == CorrType.LEAST:
-        idx = np.argmin(corr[ind, :], axis=1) 
-    elif corr_type == CorrType.HIGH:
-        idx = np.argmax(np.abs(corr[ind, :]), axis=1) 
-    elif corr_type == CorrType.LOW:
-        idx = np.argmin(np.abs(corr[ind, :]), axis=1) 
-    else:
-        raise ValueError(corr_type, "Unexpected CorrType.")
+    match corr_type:
+        case CorrType.MOST:
+            idx = np.argmax(corr[ind, :], axis=1) 
+        case CorrType.LEAST:
+            idx = np.argmin(corr[ind, :], axis=1) 
+        case CorrType.HIGH:
+            idx = np.argmax(np.abs(corr[ind, :]), axis=1) 
+        case CorrType.LEAST:
+            idx = np.argmin(np.abs(corr[ind, :]), axis=1) 
+        case _:
+            raise ValueError(corr_type, "Value <corr_type> is not a CorrType.")
 
     return idx
 
