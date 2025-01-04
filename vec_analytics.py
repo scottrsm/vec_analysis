@@ -11,7 +11,7 @@ class CorrType(Enum):
     LEAST -- Means the smallest correlation.
     MOST  -- Means the largest correlation.
     LOW   -- Means the smallest correlation in absolute value.
-    HIGH  -- Means the largest corelation in absolute value.
+    HIGH  -- Means the largest correlation in absolute value.
     """
     LEAST = 1
     MOST  = 2
@@ -33,7 +33,7 @@ def get_worst_corr(corr_type:CorrType) -> float:
         case CorrType.LOW:   # Return  infinity
             val = np.inf
         case _:
-            raise ValueError(corr_type, "<corr_type> is not of type CorrType.")
+            raise ValueError(corr_type, "Unexpected CorrType.")
 
     return val
 
@@ -55,7 +55,7 @@ def get_best_corr_idx(corr:np.ndarray   ,
         case CorrType.LEAST:
             idx = np.argmin(np.abs(corr[ind, :]), axis=1) 
         case _:
-            raise ValueError(corr_type, "Value <corr_type> is not a CorrType.")
+            raise ValueError(corr_type, "Unexpected CorrType.")
 
     return idx
 
@@ -189,8 +189,8 @@ def wgt_quantiles_tensor(VS     :np.ndarray ,
   
     Input Contract:
     -----------------
-    1. VS, ws, and qs are numpy arrays.
-    2. VS is a numpy matrix.
+    1. VS is a 2-d numpy array(matrix).
+    2. ws, qa are 1-d numpy arrays.
     3. qs in [0.0, 1.0]
     4. |VS[0]| == |ws|
     5. all(ws) >= 0
@@ -257,7 +257,7 @@ def corr_cov(X      : np.ndarray                 ,
         eps    : (Optional) A float value. The sum of the weights should be larger than this value.
         ws     : (Optional) A N numeric vector of weights of non-negative values.
         corr   : (Optional) If True, compute the correlation; otherwise, compute empirical covariance.
-        chk_con: (Optional) A boolean, defaults to Fals; meaning, do NOT check the input contract -- see below.
+        chk_con: (Optional) A boolean, defaults to False; meaning, do NOT check the input contract -- see below.
 
         Return
         ------
@@ -265,8 +265,8 @@ def corr_cov(X      : np.ndarray                 ,
 
         Input Contract:
         1. X is a 2-D numpy array.
-        2. eps > 0.0
-        3. ws is 1-D numpy array.
+        2. ws is 1-D numpy array.
+        3. eps > 0.0
         4. |ws| = |X[0:]| 
         5. all(ws) >= 0.0
         6. sum(ws) >= eps
@@ -318,7 +318,7 @@ def corr_cov(X      : np.ndarray                 ,
     if type(ws) is type(None):
         ws = np.ones(N)
 
-    # As we need to change the shape of thw weight vector, we make a copy first.
+    # As we need to normalize and change the shape of the weight vector, we make a copy first.
     wss = ws.copy()
 
     # Normalize the weights.
@@ -386,7 +386,7 @@ def most_corr_vec(X           : np.ndarray                 ,
         corr_type   : (Optional) An element from class CorrType, default is CorrType.MOST.
         eps         : (Optional) A positive float used as a minimum cumulative weight threshold.
         ws          : (Optional) A N numeric weight vector of non-negative values.
-                                 Defaults to uniform weigths.
+                                 Defaults to uniform weights.
         exclude_labs: (Optional) A list of labels in the larger universe, <ulabs>, 
                                  to exclude in the correlation analysis.
         chk_con     : (Optional) A boolean, defaults to False meaning, do NOT check the input contract -- see below.
@@ -519,7 +519,7 @@ def most_corr_vecs(X           : np.ndarray                 ,
         Keyword Arguments:
         corr_type   : (Optional) An element from class CorrType, default is CorrType.MOST.
         eps         : (Optional) A positive float used as a minimum cumulative weight threshold.
-        ws          : (Optional) An np.ndarray umeric weight vector of length N of non-negative values.
+        ws          : (Optional) An np.ndarray numeric weight vector of length N of non-negative values.
         exclude_labs: (Optional) An np.ndarray of labels in the larger universe, ulabs, to exclude in the correlation analysis.
         chk_contract: (Optional) A boolean, defaults to False, meaning; 
                                 check the input contract -- see the documentation for the function: ic.check_most_corr_vecs_input_contract.
