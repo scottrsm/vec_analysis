@@ -10,7 +10,7 @@ def chk_wgt_quantiles_contract(vs :np.ndarray,
     Parameter Contract
     -----------------
     1. vs, wts, qs are all numpy 1-d arrays.
-    2. qs in [0.0, 1.0]
+    2. qs in [0.0, 1.0) and are in sorted order.
     3. |vs| == |wts|
     4. all(wts) >= 0
     5. sum(wts) > 0
@@ -42,9 +42,11 @@ def chk_wgt_quantiles_contract(vs :np.ndarray,
     if len(qs.shape) != 1:
         raise ValueError(f"{nm}: <qs>: Not a 1-D numpy array."  )
     
-    # 2. All qs values in [0.0, 1.0]?
-    if any((qs < 0.0) | (qs > 1.0)):
+    # 2. All qs values in [0.0, 1.0)?
+    if any((qs < 0.0) | (qs >= 1.0)):
         raise ValueError(f"{nm}: <qs>: Not a proper quantiles array.")
+    if not np.all(qs == qs[np.argsort(qs)]):
+        raise ValueError(f"{nm}: <qs>: Not in sorted order.")
   
     # 3. The length of vs and wts is the same?
     if np.size(vs) != np.size(wts):
@@ -70,7 +72,7 @@ def chk_wgt_quantiles_tensor_contract(VS :np.ndarray,
     -----------------
     1. VS, and wts are numpy arrays.
     2. VS is a numpy matrix.
-    3. qs in [0.0, 1.0]
+    3. qs in [0.0, 1.0) and in sorted order.
     4. |VS[0]| == |wts|
     5. all(wts) >= 0
     6. sum(wts) > 0
@@ -103,9 +105,11 @@ def chk_wgt_quantiles_tensor_contract(VS :np.ndarray,
     if len(VS.shape) != 2:
         raise ValueError(f"{nm}: <VS>: Not a numpy matrix."  )
 
-    # 3. All <qs> values in [0.0, 1.0]?
-    if any((qs < 0.0) | (qs > 1.0)):
+    # 3. All <qs> values in [0.0, 1.0) and in sorted order?
+    if any((qs < 0.0) | (qs >= 1.0)):
         raise ValueError(f"{nm}: <qs>: Not a proper quantiles array.")
+    if not np.all(qs == qs[np.argsort(qs)]):
+        raise ValueError(f"{nm}: <qs>: Not in sorted order.")
   
     # 4. The length of <VS> rows and the length of <wts> are the same?
     if np.size(VS[0]) != np.size(wts):

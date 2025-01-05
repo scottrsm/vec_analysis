@@ -89,13 +89,20 @@ def wgt_quantiles(vs :np.ndarray    ,
                   qs :np.ndarray    ,
                   chk_con:bool=False ) -> np.ndarray:
     """
-    Get a numpy array consisting of an array of quantile weighted <vs> values.
+    Get a numpy array consisting of quantile weighted <vs> values.
+    By this we mean: For a given quantile value in <q> in <qs>, find the 
+    largest value in <vs> with the property that 
+    the sum of corresponding weights (from <ws>) is less than <q>.
+    Example: vs = [1,4,5,7] if 0.5 is in <qs>, and the weights are evenly distributed,
+             ws =  [0.25, 0.25, 0.25, 0.24], then the weighted quantile (a weighted median)
+             becomes 4. This is *NOT* what the usual definition of median is, it would be (4 + 5) / 2.
+
     
     Arguments:
     ----------
     vs    A numpy(np) (N) array of numeric values. 
     ws    A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
-    qs    A numpy(np) (D) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1]).
+    qs    A numpy(np) (D) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1)).
 
     Keyword Arguments:
     chk_con (Optional) If True, check input contract -- see below.
@@ -112,7 +119,7 @@ def wgt_quantiles(vs :np.ndarray    ,
     Input Contract:
     -----------------
     1. vs, ws, qs are all numpy arrays.
-    2. qs in [0.0, 1.0]
+    2. qs in [0.0, 1.0) and is in sorted order.
     3. |vs| == |ws|
     4. all(ws) >= 0
     5. sum(ws) > 0
@@ -152,7 +159,12 @@ def wgt_quantiles(vs :np.ndarray    ,
     X   = np.diff(A, axis=0).astype(int)
   
     # Get the indices of the boundary.
+    # This gets the column indices of the cumulative weights, cws, where the 
+    # next index would cross a quantile threshold. The dimension of <idx> is M.
     idx = np.maximum(0, np.where(X == -1)[0] - 1)
+    K = len(idx)
+    if K < M:
+        idx = np.concatenate(idx, (N-1) * np.ones(M-K))
   
     # Return the weighted quantile value of <vs> against each quantile, <qs>.
     return ovs[idx]
@@ -164,12 +176,13 @@ def wgt_quantiles_tensor(VS     :np.ndarray ,
                          chk_con:bool=False  ) -> np.ndarray:
     """ 
     Compute a (D, M) numpy array consisting of the quantile weighted values of <VS> using weights, <ws>, for each quantile in <qs>.
+    See the documentation for the function <wgt_quantiles>.
     
     Arguments:
     ----------
     VS    A numpy(np) (D, N) matrix of numeric values. 
     ws    A numpy(np) (N) array of numeric weights. (Weights need only be non-negative, they need not sum to 1.)
-    qs    A numpy(np) (M) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1]).
+    qs    A numpy(np) (M) array of numeric values.  (Meant to be quantiles -- numbers in the range [0, 1)).
 
     Keyword Arguments:
     chk_con  (Optional) If True check the input contract -- see below.
@@ -191,7 +204,7 @@ def wgt_quantiles_tensor(VS     :np.ndarray ,
     -----------------
     1. VS is a 2-d numpy array(matrix).
     2. ws, qa are 1-d numpy arrays.
-    3. qs in [0.0, 1.0]
+    3. qs in [0.0, 1.0) and in sorted order.
     4. |VS[0]| == |ws|
     5. all(ws) >= 0
     6. sum(ws) > 0
@@ -261,7 +274,7 @@ def corr_cov(X      : np.ndarray                 ,
 
         Return
         ------
-        A MxM correlation, or emprical covariance matrix of the M vectors.
+        A MxM correlation, or empirical covariance matrix of the M vectors.
 
         Input Contract:
         1. X is a 2-D numpy array.
