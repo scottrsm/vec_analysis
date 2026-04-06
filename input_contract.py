@@ -316,7 +316,7 @@ def check_most_corr_vecs_input_contract(X           :np.ndarray          ,
 
     # 2.
     if type(X) != np.ndarray:
-        raise ValueError(f"{nm}: The parameter, ulabs, is not a numpy array.")
+        raise ValueError(f"{nm}: The parameter, X, is not a numpy array.")
 
     if len(X.shape) != 2:
         raise ValueError(f"{nm}: The parameter, X, is not a 2-d numpy array.")

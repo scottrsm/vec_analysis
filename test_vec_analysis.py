@@ -237,6 +237,242 @@ def test_most_corr2(most_corr2):
     assert np.allclose(gold_val['best_corr'], most_corr2['best_corr']) 
 
 
+# --- Helper function tests ---
+
+def test_get_worst_corr():
+    assert va.get_worst_corr(va.CorrType.MOST)  == -np.inf
+    assert va.get_worst_corr(va.CorrType.LEAST) ==  np.inf
+    assert va.get_worst_corr(va.CorrType.HIGH)  ==  0.0
+    assert va.get_worst_corr(va.CorrType.LOW)   ==  np.inf
+
+
+def test_get_best_corr_idx_most():
+    corr = np.array([[ 0.0,  0.8, -0.3],
+                     [ 0.8,  0.0,  0.5],
+                     [-0.3,  0.5,  0.0]])
+    ind = np.arange(3)
+    # Set self-correlation to worst.
+    corr[ind, ind] = -np.inf
+    idx = va.get_best_corr_idx(corr, ind, va.CorrType.MOST)
+    assert list(idx) == [1, 0, 1]  # row0->col1(0.8), row1->col0(0.8), row2->col1(0.5)
+
+
+def test_get_best_corr_idx_least():
+    corr = np.array([[ 0.0,  0.8, -0.3],
+                     [ 0.8,  0.0,  0.5],
+                     [-0.3,  0.5,  0.0]])
+    ind = np.arange(3)
+    corr[ind, ind] = np.inf
+    idx = va.get_best_corr_idx(corr, ind, va.CorrType.LEAST)
+    assert list(idx) == [2, 2, 0]  # row0->col2(-0.3), row1->col2(0.5), row2->col0(-0.3)
+
+
+def test_get_best_corr_idx_high():
+    corr = np.array([[ 0.0,  0.2, -0.9],
+                     [ 0.2,  0.0,  0.5],
+                     [-0.9,  0.5,  0.0]])
+    ind = np.arange(3)
+    corr[ind, ind] = 0.0
+    idx = va.get_best_corr_idx(corr, ind, va.CorrType.HIGH)
+    assert list(idx) == [2, 2, 0]  # highest |corr|: row0->col2(0.9), row1->col2(0.5), row2->col0(0.9)
+
+
+def test_get_best_corr_idx_low():
+    corr = np.array([[ 0.0,  0.8, -0.1],
+                     [ 0.8,  0.0,  0.5],
+                     [-0.1,  0.5,  0.0]])
+    ind = np.arange(3)
+    corr[ind, ind] = np.inf
+    idx = va.get_best_corr_idx(corr, ind, va.CorrType.LOW)
+    assert list(idx) == [2, 2, 0]  # lowest |corr|: row0->col2(0.1), row1->col2(0.5), row2->col0(0.1)
+
+
+def test_get_best_corr_idxs_most():
+    corr = np.array([[ 0.0,  0.8,  0.3, -0.5],
+                     [ 0.8,  0.0,  0.5,  0.2],
+                     [ 0.3,  0.5,  0.0,  0.9],
+                     [-0.5,  0.2,  0.9,  0.0]])
+    ind = np.arange(4)
+    corr[ind, ind] = -np.inf
+    idxs = va.get_best_corr_idxs(corr, ind, va.CorrType.MOST, 2)
+    assert idxs.shape == (4, 2)
+    assert list(idxs[0]) == [1, 2]  # row0 top-2: col1(0.8), col2(0.3)
+    assert list(idxs[2]) == [3, 1]  # row2 top-2: col3(0.9), col1(0.5)
+
+
+def test_get_best_corr_idxs_least():
+    corr = np.array([[ 0.0,  0.8,  0.3, -0.5],
+                     [ 0.8,  0.0,  0.5,  0.2],
+                     [ 0.3,  0.5,  0.0,  0.9],
+                     [-0.5,  0.2,  0.9,  0.0]])
+    ind = np.arange(4)
+    corr[ind, ind] = np.inf
+    idxs = va.get_best_corr_idxs(corr, ind, va.CorrType.LEAST, 2)
+    assert idxs.shape == (4, 2)
+    assert list(idxs[0]) == [3, 2]  # row0 bottom-2: col3(-0.5), col2(0.3)
+
+
+# --- most_corr_vec with different CorrTypes ---
+
+@pt.fixture
+def corr_data():
+    np.random.seed(1)
+    X = np.random.rand(5, 10)
+    ulabs    = np.array(["IBM", "PFE", "C", "BAC", "GS"])
+    labs     = np.array(["PFE", "GS"])
+    lab_dict = {'IBM': 0, 'PFE': 1, 'C': 2, 'BAC': 3, 'GS': 4}
+    return X, labs, ulabs, lab_dict
+
+
+def test_most_corr_vec_least(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    df = va.most_corr_vec(X, labs, ulabs, lab_dict, corr_type=va.CorrType.LEAST)
+    assert len(df) == 2
+    # LEAST should pick the smallest (most negative) correlation.
+    for val in df['best_corr']:
+        assert np.isfinite(val)
+
+
+def test_most_corr_vec_high(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    df = va.most_corr_vec(X, labs, ulabs, lab_dict, corr_type=va.CorrType.HIGH)
+    assert len(df) == 2
+    for val in df['best_corr']:
+        assert np.isfinite(val)
+
+
+def test_most_corr_vec_low(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    df = va.most_corr_vec(X, labs, ulabs, lab_dict, corr_type=va.CorrType.LOW)
+    assert len(df) == 2
+    for val in df['best_corr']:
+        assert np.isfinite(val)
+
+
+# --- most_corr_vec with exclude_labs ---
+
+def test_most_corr_vec_exclude(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    # Exclude GS -- PFE can no longer pick GS as best.
+    exclude = np.array(["GS"])
+    df = va.most_corr_vec(X, labs, ulabs, lab_dict, exclude_labs=exclude)
+    # PFE's best should NOT be GS.
+    pfe_row = df[df['lab'] == 'PFE'].iloc[0]
+    assert pfe_row['best_correlate'] != 'GS'
+
+
+# --- most_corr_vecs (top-k) ---
+
+def test_most_corr_vecs_uniform(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    df = va.most_corr_vecs(X, labs, ulabs, lab_dict, k=2)
+    assert len(df) == 2
+    # Each row should have k=2 correlates.
+    for correlates in df['best_correlates']:
+        assert len(correlates) == 2
+    for corrs in df['best_corrs']:
+        assert len(corrs) == 2
+
+
+def test_most_corr_vecs_weighted(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    ws = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
+    df = va.most_corr_vecs(X, labs, ulabs, lab_dict, k=3, ws=ws)
+    assert len(df) == 2
+    for correlates in df['best_correlates']:
+        assert len(correlates) == 3
+
+
+def test_most_corr_vecs_exclude(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    exclude = np.array(["IBM", "C"])
+    df = va.most_corr_vecs(X, labs, ulabs, lab_dict, k=2, exclude_labs=exclude)
+    assert len(df) == 2
+    # Excluded labels should not appear in results.
+    for correlates in df['best_correlates']:
+        assert 'IBM' not in correlates
+        assert 'C'   not in correlates
+
+
+def test_most_corr_vecs_least(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    df = va.most_corr_vecs(X, labs, ulabs, lab_dict, k=2, corr_type=va.CorrType.LEAST)
+    assert len(df) == 2
+    # Correlations should be in ascending order (least first).
+    for corrs in df['best_corrs']:
+        assert corrs[0] <= corrs[1]
+
+
+# --- Input contract tests ---
+
+def test_wgt_quantiles_contract_bad_vs():
+    with pt.raises(ValueError):
+        va.wgt_quantiles([1, 2, 3], np.ones(3), np.array([0.5]), chk_con=True)
+
+
+def test_wgt_quantiles_contract_bad_qs():
+    with pt.raises(ValueError):
+        va.wgt_quantiles(np.array([1., 2., 3.]), np.ones(3), np.array([1.5]), chk_con=True)
+
+
+def test_wgt_quantiles_contract_length_mismatch():
+    with pt.raises(ValueError):
+        va.wgt_quantiles(np.array([1., 2., 3.]), np.ones(4), np.array([0.5]), chk_con=True)
+
+
+def test_wgt_quantiles_contract_negative_weights():
+    with pt.raises(ValueError):
+        va.wgt_quantiles(np.array([1., 2., 3.]), np.array([-1., 1., 1.]), np.array([0.5]), chk_con=True)
+
+
+def test_wgt_quantiles_contract_zero_weight_sum():
+    with pt.raises(ValueError):
+        va.wgt_quantiles(np.array([1., 2., 3.]), np.zeros(3), np.array([0.5]), chk_con=True)
+
+
+def test_wgt_quantiles_tensor_contract_bad_vs():
+    with pt.raises(ValueError):
+        va.wgt_quantiles_tensor(np.array([1., 2., 3.]), np.ones(3), np.array([0.5]), chk_con=True)
+
+
+def test_corr_cov_contract_bad_X():
+    with pt.raises(ValueError):
+        va.corr_cov(np.array([1., 2., 3.]), chk_con=True)
+
+
+def test_corr_cov_contract_bad_eps():
+    np.random.seed(1)
+    X = np.random.rand(3, 5)
+    with pt.raises(ValueError):
+        va.corr_cov(X, eps=-1.0, chk_con=True)
+
+
+def test_corr_cov_contract_bad_ws():
+    np.random.seed(1)
+    X = np.random.rand(3, 5)
+    with pt.raises(ValueError):
+        va.corr_cov(X, ws=np.array([-1., 1., 1., 1., 1.]), chk_con=True)
+
+
+def test_corr_cov_contract_ws_length_mismatch():
+    np.random.seed(1)
+    X = np.random.rand(3, 5)
+    with pt.raises(ValueError):
+        va.corr_cov(X, ws=np.ones(3), chk_con=True)
+
+
+# --- Weighted correlation tests ---
+
+def test_corr_weighted():
+    np.random.seed(1)
+    X  = np.random.rand(5, 10)
+    ws = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
+    corr = va.corr_cov(X, ws=ws)
+    assert corr.shape == (5, 5)
+    assert np.allclose(np.diag(corr), 1.0)
+    assert np.allclose(corr, corr.T)
+
+
 # Run the tests...
 if __name__ == "__main__":
     pt.main()

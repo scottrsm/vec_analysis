@@ -47,13 +47,13 @@ def get_best_corr_idx(corr:np.ndarray   ,
     """
     match corr_type:
         case CorrType.MOST:
-            idx = np.argmax(corr[ind, :], axis=1) 
+            idx = np.argmax(corr[ind, :], axis=1)
         case CorrType.LEAST:
-            idx = np.argmin(corr[ind, :], axis=1) 
+            idx = np.argmin(corr[ind, :], axis=1)
         case CorrType.HIGH:
-            idx = np.argmax(np.abs(corr[ind, :]), axis=1) 
-        case CorrType.LEAST:
-            idx = np.argmin(np.abs(corr[ind, :]), axis=1) 
+            idx = np.argmax(np.abs(corr[ind, :]), axis=1)
+        case CorrType.LOW:
+            idx = np.argmin(np.abs(corr[ind, :]), axis=1)
         case _:
             raise ValueError(corr_type, "Unexpected CorrType.")
 
@@ -164,7 +164,7 @@ def wgt_quantiles(vs :np.ndarray    ,
     idx = np.maximum(0, np.where(X == -1)[0] - 1)
     K = len(idx)
     if K < M:
-        idx = np.concatenate(idx, (N-1) * np.ones(M-K))
+        idx = np.concatenate([idx, (N-1) * np.ones(M-K)]).astype(int)
   
     # Return the weighted quantile value of <vs> against each quantile, <qs>.
     return ovs[idx]
@@ -302,8 +302,8 @@ def corr_cov(X      : np.ndarray                 ,
         if len(X.shape) != 2:
             raise ValueError(f"{nm}: Parameter, X, is not a matrix.")
 
-        if type(eps) == type(0.0) and eps <= 0.0:
-            raise ValueError("{nm}: Parameter, eps, is not a positive number.")
+        if eps <= 0.0:
+            raise ValueError(f"{nm}: Parameter, eps, is not a positive number.")
 
 
     # Get shape of <X>.
@@ -569,7 +569,7 @@ def most_corr_vecs(X           : np.ndarray                 ,
     H    = len(labs)
 
     # If not given, set <ws> to its default setting -- uniform weights.
-    if not ws:
+    if ws is None:
         ws = np.ones(N)
 
     # Copy weights as we will reshape them.
