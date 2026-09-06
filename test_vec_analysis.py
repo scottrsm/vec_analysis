@@ -473,6 +473,233 @@ def test_corr_weighted():
     assert np.allclose(corr, corr.T)
 
 
+# --- Weighted quantiles: definition, ordering, weights, edge cases ---
+
+def test_wgt_quantiles_definition():
+    vs = np.array([1., 4., 5., 7.])
+    ws = np.ones(4)
+    # Largest value whose cumulative weight is <= q; the smallest value if there is none.
+    qs = np.array([0.0, 0.1, 0.25, 0.5, 0.75, 0.999, 1.0])
+    assert list(va.wgt_quantiles(vs, ws, qs)) == [1., 1., 1., 4., 5., 5., 7.]
+    # Unsorted values and unequal weights: cumulative weights of sorted [1,2,3] are .3, .6, 1.
+    assert list(va.wgt_quantiles(np.array([3., 1., 2.]), np.array([0.4, 0.3, 0.3]), np.array([0.29, 0.3, 0.6, 0.99, 1.0]))) == [1., 1., 2., 2., 3.]
+    # Zero weight elements are never selected on their own account.
+    assert list(va.wgt_quantiles(np.array([1., 2.]), np.array([0., 1.]), np.array([0.0, 0.5, 1.0]))) == [1., 1., 2.]
+    # Matches numpy for uniform weights at large N.
+    xs = np.linspace(0.0, 10.0, 2000)
+    assert np.allclose(va.wgt_quantiles(xs, np.ones(2000), np.array([0.5])), [np.quantile(xs, 0.5)], atol=0.01)
+
+
+def test_wgt_quantiles_unsorted_qs_and_order():
+    vs = np.array([1., 4., 5., 7.])
+    ws = np.ones(4)
+    # The result follows the order of qs, whether or not qs is sorted.
+    assert list(va.wgt_quantiles(vs, ws, np.array([0.75, 0.25]))) == [5., 1.]
+    assert list(va.wgt_quantiles(vs, ws, np.array([0.75, 0.25]), chk_con=True)) == [5., 1.]
+    q_in = np.array([0.75, 0.25])
+    va.wgt_quantiles(vs, ws, q_in)
+    assert list(q_in) == [0.75, 0.25]            # inputs are not modified
+
+
+def test_wgt_quantiles_integer_weights_and_values():
+    assert list(va.wgt_quantiles(np.array([1., 4., 5., 7.]), np.array([1, 1, 1, 1]), np.array([0.5]))) == [4.]
+    assert list(va.wgt_quantiles(np.array([1, 4, 5, 7]), np.array([1, 1, 1, 1]), np.array([0.5]))) == [4]
+    T = va.wgt_quantiles_tensor(np.array([[1., 4., 5., 7.], [7., 5., 4., 1.]]), np.array([1, 1, 1, 1]), np.array([0.5]))
+    assert T.tolist() == [[4.], [4.]]
+    w_in = np.array([1, 2, 3, 4])
+    va.wgt_quantiles_tensor(np.array([[1., 4., 5., 7.]]), w_in, np.array([0.5]))
+    assert list(w_in) == [1, 2, 3, 4]            # weights are not modified
+
+
+def test_wgt_quantiles_tensor_matches_vector():
+    np.random.seed(3)
+    X  = np.random.rand(7, 50)
+    ws = np.random.rand(50)
+    qs = np.array([0.9, 0.1, 0.5, 1.0, 0.0])
+    T  = va.wgt_quantiles_tensor(X, ws, qs)
+    assert T.shape == (7, 5)
+    for d in range(7):
+        assert np.allclose(T[d], va.wgt_quantiles(X[d], ws, qs))
+    assert np.allclose(T[:, 3], X.max(axis=1)) and np.allclose(T[:, 4], X.min(axis=1))
+
+
+def test_wgt_quantiles_contract_q_one_allowed_and_empty_rejected():
+    assert list(va.wgt_quantiles(np.array([1., 2.]), np.ones(2), np.array([1.0]), chk_con=True)) == [2.]
+    with pt.raises(ValueError):
+        va.wgt_quantiles(np.array([]), np.array([]), np.array([0.5]), chk_con=True)
+    with pt.raises(ValueError):
+        va.wgt_quantiles(np.array([1., 2.]), np.ones(2), np.array([-0.1]), chk_con=True)
+    with pt.raises(ValueError):
+        va.wgt_quantiles_tensor(np.ones((2, 3)), np.ones(4), np.array([0.5]), chk_con=True)
+    with pt.raises(ValueError):
+        va.wgt_quantiles_tensor(np.ones((2, 3)), np.array([-1., 1., 1.]), np.array([0.5]), chk_con=True)
+    with pt.raises(ValueError):
+        va.wgt_quantiles_tensor(np.ones((2, 3)), np.ones(3), np.array([[0.5]]), chk_con=True)
+
+
+# --- corr_cov against numpy, integer weights, degenerate rows ---
+
+def test_corr_cov_matches_numpy():
+    np.random.seed(5)
+    X = np.random.rand(6, 40)
+    assert np.allclose(va.corr_cov(X), np.corrcoef(X))
+    assert np.allclose(va.corr_cov(X, corr=False), np.cov(X))
+    # Weighted correlation against a direct computation.
+    ws = np.random.rand(40)
+    w  = ws / ws.sum()
+    Xc = X - (X * w).sum(axis=1, keepdims=True)
+    C  = (Xc * w) @ Xc.T
+    assert np.allclose(va.corr_cov(X, ws=ws), C / np.sqrt(np.outer(np.diag(C), np.diag(C))))
+    assert np.allclose(va.corr_cov(X, ws=ws, corr=False), C / (1.0 - np.sum(w * w)))
+
+
+def test_corr_cov_integer_inputs_and_constant_row():
+    X = np.array([[1, 2, 3, 4], [2, 4, 6, 8], [5, 5, 5, 5]])
+    C = va.corr_cov(X, ws=np.array([1, 1, 2, 2]))
+    assert C.shape == (3, 3)
+    assert np.isclose(C[0, 1], 1.0)
+    assert np.all(C[2, :] == 0.0) and np.all(C[:, 2] == 0.0)   # undefined -> 0
+    X_in = X.copy(); w_in = np.array([1., 1., 2., 2.])
+    va.corr_cov(X, ws=w_in)
+    assert np.array_equal(X, X_in) and np.array_equal(w_in, [1., 1., 2., 2.])
+
+
+def test_corr_cov_large_is_fast():
+    # Matrix-product implementation: 400 x 2000 must not build a 400x400x2000 temporary.
+    import time
+    np.random.seed(0)
+    X = np.random.rand(400, 2000)
+    t = time.time(); C = va.corr_cov(X); dt = time.time() - t
+    assert C.shape == (400, 400) and dt < 5.0
+    assert np.allclose(C, np.corrcoef(X))
+
+
+# --- most_corr_vec / most_corr_vecs: label consistency, validity, exclusion, k ---
+
+def test_most_corr_lab_dict_must_match_ulabs():
+    np.random.seed(0)
+    X = np.random.rand(3, 50)
+    ulabs = np.array(['a', 'b', 'c'])
+    bad   = {'a': 2, 'b': 1, 'c': 0}
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, np.array(['a']), ulabs, bad)
+    with pt.raises(ValueError):
+        va.most_corr_vecs(X, np.array(['a']), ulabs, bad, k=1)
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, np.array(['a']), ulabs, bad, chk_con=True)
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, np.array(['a']), ulabs, {'a': 0, 'b': 1}, chk_con=True)   # missing key
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, np.array(['zz']), ulabs, {'a': 0, 'b': 1, 'c': 2})          # unknown label
+    good = {'a': 0, 'b': 1, 'c': 2}
+    C = np.corrcoef(X)
+    df = va.most_corr_vec(X, np.array(['a', 'c']), ulabs, good)
+    assert df.best_correlate[0] == ulabs[np.argsort(-C[0])[1]]
+    assert df.best_correlate[1] == ulabs[np.argsort(-C[2])[1]]
+    assert np.isclose(df.best_corr[0], np.sort(C[0])[-2])
+
+
+def test_most_corr_vec_matches_corr_cov(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    C = va.corr_cov(X)
+    for ct, pick in [(va.CorrType.MOST, lambda r: np.argmax(r)), (va.CorrType.LEAST, lambda r: np.argmin(r)),
+                     (va.CorrType.HIGH, lambda r: np.argmax(np.abs(r))), (va.CorrType.LOW, lambda r: np.argmin(np.abs(r)))]:
+        df = va.most_corr_vec(X, labs, ulabs, lab_dict, corr_type=ct)
+        for lab, best, val in zip(df.lab, df.best_correlate, df.best_corr):
+            i = lab_dict[lab]
+            row = C[i].copy()
+            row[i] = va.get_worst_corr(ct)
+            j = pick(row)
+            assert best == ulabs[j] and np.isclose(val, C[i, j])
+
+
+def test_most_corr_vec_nothing_valid(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    df = va.most_corr_vec(X, np.array(['PFE']), ulabs, lab_dict, exclude_labs=np.array(['IBM', 'C', 'BAC', 'GS']))
+    assert df.best_correlate[0] is None and np.isnan(df.best_corr[0]) and df.valid_cnt[0] == 0
+    # Excluding the query label itself is harmless.
+    df = va.most_corr_vec(X, np.array(['PFE']), ulabs, lab_dict, exclude_labs=np.array(['PFE']))
+    assert df.valid_cnt[0] == 1 and df.best_correlate[0] != 'PFE'
+
+
+def test_most_corr_vec_high_zero_correlation_is_valid():
+    # A correlation of exactly 0 is a valid HIGH result (the sentinel is also 0).
+    X = np.array([[1., 0., -1., 0.], [0., 1., 0., -1.], [1., 1., -1., -1.]])
+    ulabs = np.array(['a', 'b', 'c']); lab_dict = {'a': 0, 'b': 1, 'c': 2}
+    df = va.most_corr_vec(X, np.array(['a']), ulabs, lab_dict, corr_type=va.CorrType.HIGH, exclude_labs=np.array(['c']))
+    assert df.best_correlate[0] == 'b' and df.best_corr[0] == 0.0 and df.valid_cnt[0] == 1
+
+
+def test_most_corr_vec_integer_weights_and_inputs_unmodified(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    ws = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    df_i = va.most_corr_vec(X, labs, ulabs, lab_dict, ws=ws)
+    df_f = va.most_corr_vec(X, labs, ulabs, lab_dict, ws=ws.astype(float))
+    assert list(df_i.best_correlate) == list(df_f.best_correlate) and np.allclose(df_i.best_corr, df_f.best_corr)
+    assert list(ws) == list(range(1, 11))
+    X_in = X.copy(); va.most_corr_vecs(X, labs, ulabs, lab_dict, k=2, ws=ws); assert np.array_equal(X, X_in)
+
+
+def test_most_corr_vecs_values_and_validity(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    C = va.corr_cov(X)
+    df = va.most_corr_vecs(X, labs, ulabs, lab_dict, k=4)
+    for lab, bests, corrs, cnt in zip(df.lab, df.best_correlates, df.best_corrs, df.valid_cnt):
+        i = lab_dict[lab]
+        order = [j for j in np.argsort(-C[i]) if j != i]
+        assert bests == [ulabs[j] for j in order] and np.allclose(corrs, C[i, order]) and cnt == 4
+    # k larger than the number of valid candidates: the tail is None / NaN and valid_cnt says so.
+    df = va.most_corr_vecs(X, np.array(['PFE']), ulabs, lab_dict, k=5, exclude_labs=np.array(['IBM', 'C']))
+    assert df.valid_cnt[0] == 2
+    assert df.best_correlates[0][2:] == [None, None, None] and np.all(np.isnan(df.best_corrs[0][2:]))
+    assert df.best_correlates[0][0] != 'PFE' and 'IBM' not in df.best_correlates[0] and 'C' not in df.best_correlates[0]
+    # k must be in [1, M].
+    with pt.raises(ValueError):
+        va.most_corr_vecs(X, labs, ulabs, lab_dict, k=6)
+    with pt.raises(ValueError):
+        va.most_corr_vecs(X, labs, ulabs, lab_dict, k=0)
+    with pt.raises(ValueError):
+        va.most_corr_vecs(X, labs, ulabs, lab_dict, k=4, exclude_labs=np.array(['IBM', 'C']), chk_con=True)
+
+
+def test_get_best_corr_idx_scalar_row():
+    corr = np.array([[0.1, 0.9, 0.3], [0.9, 0.1, 0.5]])
+    assert va.get_best_corr_idx(corr, 0, va.CorrType.MOST) == 1
+    assert va.get_best_corr_idx(corr, 1, va.CorrType.LEAST) == 1
+    assert list(va.get_best_corr_idxs(corr, 0, va.CorrType.MOST, 2)) == [1, 2]
+    with pt.raises(ValueError):
+        va.get_best_corr_idxs(corr, np.arange(2), va.CorrType.MOST, 4)
+
+
+def test_most_corr_contract_rejects_bad_values(corr_data):
+    X, labs, ulabs, lab_dict = corr_data
+    Xn = X.copy(); Xn[0, 0] = np.nan
+    with pt.raises(ValueError):
+        va.most_corr_vec(Xn, labs, ulabs, lab_dict, chk_con=True)
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, labs, ulabs, lab_dict, ws=np.full(10, np.inf), chk_con=True)
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, labs, np.array(['IBM', 'PFE', 'C', 'BAC', 'BAC']), lab_dict, chk_con=True)   # duplicate universe label
+    with pt.raises(ValueError):
+        va.most_corr_vec(X, labs, ulabs, lab_dict, exclude_labs=np.array(['XX']), chk_con=True)
+    with pt.raises(ValueError):
+        va.most_corr_vecs(X, labs, ulabs, lab_dict, k=2.0, chk_con=True)
+
+
+def test_package_import_without_repo_on_path():
+    # `import vec_analysis` must work when only the parent directory is importable.
+    import subprocess, sys, os
+    parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    code = ("import sys; sys.path[:] = [p for p in sys.path if 'vec_analysis' not in p]; sys.path.insert(0, %r); "
+            "import vec_analysis as v; import numpy as np; "
+            "print(v.vec_analytics.wgt_quantiles(np.array([1.,4,5,7]), np.ones(4), np.array([0.5]))[0]); "
+            "print('jax_vec_analytics' in sys.modules)") % parent
+    env = dict(os.environ); env.pop('PYTHONPATH', None)
+    out = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, env=env, cwd=parent)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.split() == ['4.0', 'False']   # works, and jax is not imported eagerly
+
+
 # Run the tests...
 if __name__ == "__main__":
     pt.main()
